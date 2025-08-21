@@ -9,6 +9,8 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
 - **Manual Joint Control**: Real-time slider control for all 6 joints with safety limits
 - **Choreography Recording**: Record and playback custom movement sequences
 - **Mouse Jiggler Mode**: Continuous movement using recorded choreographies
+- **Saved Positions**: Save, manage, and quickly move to named robot positions
+- **Command Center**: Quick-access interface for enabled saved positions
 
 ### 📹 Camera & Media
 - **Live Webcam Streaming**: Real-time video feed from connected camera
@@ -18,6 +20,7 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
 
 ### 🌐 Web Interface
 - **Responsive Design**: Modern glassmorphism UI that works on desktop and mobile
+- **Multi-page Navigation**: Main controller, position configuration, and command center
 - **Real-time Status**: Live joint angles, connection status, and operation feedback
 - **WebSocket Integration**: Real-time updates via Socket.IO
 - **Progress Tracking**: Visual feedback for all operations
@@ -55,6 +58,11 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
    ```bash
    python3 app.py
    ```
+   
+   Or use the provided script to start/reconnect to a tmux session:
+   ```bash
+   ./start_claude.sh
+   ```
 
 5. **Access the web interface**:
    Open `http://localhost:5000` in your browser
@@ -66,6 +74,12 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
 2. **Control Robot**: Use manual joint sliders or preset movements
 3. **Record Movements**: Start recording, move joints manually, capture positions
 4. **Playback**: Play recorded choreographies or enable jiggle mode
+
+### Position Management
+1. **Save Positions**: Use current robot position to create named saved positions
+2. **Configure Positions**: Enable/disable positions for command center display
+3. **Command Center**: Quick-access buttons for moving to enabled positions
+4. **Position Navigation**: Switch between main controller, position config, and command center
 
 ### Media Capture
 1. **Screenshots**: Click "📸 Screenshot" while camera is active
@@ -94,6 +108,13 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
 - `POST /api/choreography/play` - Play recorded sequence
 - `POST /api/choreography/clear` - Clear recorded movements
 
+### Saved Positions
+- `GET /api/positions` - Get all saved positions and configuration
+- `POST /api/positions/save` - Save current robot position with name
+- `POST /api/positions/delete` - Delete a saved position
+- `POST /api/positions/update_config` - Enable/disable position for command center
+- `POST /api/positions/move_to/<name>` - Move robot to saved position
+
 ### Camera & Media
 - `GET /video_feed` - MJPEG video stream
 - `POST /api/camera/start` - Start camera
@@ -107,14 +128,19 @@ A comprehensive web-based controller for the MyCobot320 robotic arm with live we
 
 ```
 mycobot-web-controller/
-├── app.py                 # Main Flask application
+├── app.py                    # Main Flask application
 ├── templates/
-│   └── index.html        # Web interface
-├── videos/               # Recorded videos (created at runtime)
-├── requirements.txt      # Python dependencies
-├── test_screenshot.py    # Screenshot functionality test
-├── test_video_recording.py # Video recording test
-└── README.md            # This file
+│   ├── index.html           # Main controller interface
+│   ├── positions.html       # Position management page  
+│   └── command_center.html  # Quick-access command center
+├── videos/                  # Recorded videos (created at runtime)
+├── saved_positions.json     # Stored robot positions
+├── position_config.json     # Position enable/disable settings
+├── start_claude.sh          # Script to start/reconnect Claude tmux session
+├── requirements.txt         # Python dependencies
+├── test_screenshot.py       # Screenshot functionality test
+├── test_video_recording.py  # Video recording test
+└── README.md               # This file
 ```
 
 ## Technical Details
