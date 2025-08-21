@@ -300,11 +300,50 @@
         .recording { background: #FF9800; }
         .playing { background: #2196F3; }
         .jiggling { background: #9C27B0; }
+        
+        .navigation {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+        
+        .nav-link {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .nav-link.current {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🤖 MyCobot320 Web Controller</h1>
+        
+        <div class="navigation">
+            <a href="/" class="nav-link current">🏠 Main Controller</a>
+            <a href="/positions" class="nav-link">⚙️ Position Config</a>
+            <a href="/command-center" class="nav-link">🎮 Command Center</a>
+        </div>
         
         <div class="status-panel">
             <div class="section-title">Robot Status</div>

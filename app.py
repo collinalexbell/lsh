@@ -5,6 +5,7 @@ import time
 import threading
 import json
 import cv2
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mycobot-web-controller-secret-change-in-production'
@@ -32,6 +33,12 @@ video_filename = None
 robot_powered = False
 manual_control_active = False
 
+# Saved positions management
+saved_positions = {}
+position_config = {}  # Stores which positions are enabled in command center
+POSITIONS_FILE = '/home/er/lsh/saved_positions.json'
+CONFIG_FILE = '/home/er/lsh/position_config.json'
+
 # Internal joint angle state (what we want the robot to be at)
 target_angles = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 state_initialized = False
@@ -52,6 +59,31 @@ def clamp_angles(angles):
         min_a, max_a = ANGLE_LIMITS[i]
         clamped.append(max(min(angle, max_a), min_a))
     return clamped
+
+def load_saved_positions():
+    """Load saved positions from file"""
+    global saved_positions, position_config
+    try:
+        if os.path.exists(POSITIONS_FILE):
+            with open(POSITIONS_FILE, 'r') as f:
+                saved_positions = json.load(f)
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                position_config = json.load(f)
+    except Exception as e:
+        print(f"Error loading saved positions: {e}")
+        saved_positions = {}
+        position_config = {}
+
+def save_positions_to_file():
+    """Save positions to file"""
+    try:
+        with open(POSITIONS_FILE, 'w') as f:
+            json.dump(saved_positions, f, indent=2)
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(position_config, f, indent=2)
+    except Exception as e:
+        print(f"Error saving positions: {e}")
 
 def ensure_robot_powered():
     """Ensure robot is powered on and ready for commands"""
@@ -553,6 +585,131 @@ def power_off_endpoint():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+# Saved Positions API Endpoints
+@app.route('/api/positions', methods=['GET'])
+def get_positions():
+    """Get all saved positions and config"""
+    return jsonify({
+        'success': True,
+        'positions': saved_positions,
+        'config': position_config
+    })
+
+@app.route('/api/positions/save', methods=['POST'])
+def save_position():
+    """Save current robot position with a name"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'Position name is required'})
+        
+        if name in saved_positions:
+            return jsonify({'success': False, 'message': f'Position "{name}" already exists'})
+        
+        ensure_robot_powered()
+        current_angles = mc.get_angles()
+        
+        saved_positions[name] = {
+            'angles': clamp_angles(current_angles),
+            'created': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        # Add to config as enabled by default
+        position_config[name] = {'enabled': True}
+        
+        save_positions_to_file()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Position "{name}" saved successfully',
+            'angles': saved_positions[name]['angles']
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/positions/delete', methods=['POST'])
+def delete_position():
+    """Delete a saved position"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        
+        if name not in saved_positions:
+            return jsonify({'success': False, 'message': f'Position "{name}" not found'})
+        
+        del saved_positions[name]
+        if name in position_config:
+            del position_config[name]
+        
+        save_positions_to_file()
+        
+        return jsonify({'success': True, 'message': f'Position "{name}" deleted'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/positions/update_config', methods=['POST'])
+def update_position_config():
+    """Update position configuration (enabled/disabled for command center)"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        enabled = data.get('enabled', True)
+        
+        if name not in saved_positions:
+            return jsonify({'success': False, 'message': f'Position "{name}" not found'})
+        
+        position_config[name] = {'enabled': enabled}
+        save_positions_to_file()
+        
+        return jsonify({'success': True, 'message': f'Position "{name}" {"enabled" if enabled else "disabled"}'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/positions/move_to/<position_name>', methods=['POST'])
+def move_to_position(position_name):
+    """Move robot to a saved position"""
+    try:
+        if position_name not in saved_positions:
+            return jsonify({'success': False, 'message': f'Position "{position_name}" not found'})
+        
+        position_data = saved_positions[position_name]
+        angles = position_data['angles']
+        
+        ensure_robot_powered()
+        mc.send_angles(angles, 80)  # Use moderate speed
+        
+        # Update internal state
+        global target_angles, state_initialized, manual_control_active
+        target_angles = list(angles)
+        state_initialized = True
+        manual_control_active = False
+        
+        socketio.emit('status_update', get_robot_status())
+        
+        return jsonify({
+            'success': True,
+            'message': f'Moving to position "{position_name}"',
+            'angles': angles
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/positions')
+def positions_page():
+    """Position management page"""
+    return render_template('positions.html')
+
+@app.route('/command-center')
+def command_center_page():
+    """Command center page with position buttons"""
+    return render_template('command_center.html')
+
 def home():
     mc.send_angles([7.11, -135, 142.91, 36.56, 83.67, -0.79], 100)
 
@@ -568,4 +725,6 @@ def handle_status_request():
     emit('status_update', get_robot_status())
 
 if __name__ == '__main__':
+    # Load saved positions on startup
+    load_saved_positions()
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
