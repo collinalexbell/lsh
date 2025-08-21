@@ -7,6 +7,6 @@ if tmux has-session -t claude 2>/dev/null; then
 else
     echo "No Claude session found, starting new one..."
     tmux new-session -d -s claude -c /home/er/lsh
-    tmux send-keys -t claude "claude-code" Enter
+    tmux send-keys -t claude "claude" Enter
     tmux attach-session -t claude
 fi
