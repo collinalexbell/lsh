@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyCobot320 Web Controller</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .status-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .video-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: fit-content;
+        }
+        
+        .video-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .video-stream {
+            width: 100%;
+            max-width: 360px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.3);
+            display: none;
+        }
+        
+        .video-placeholder {
+            width: 100%;
+            max-width: 360px;
+            height: 270px;
+            border-radius: 8px;
+            border: 2px dashed rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+        
+        .joint-control {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .joint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .joint-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .joint-value {
+            font-family: monospace;
+            color: #4CAF50;
+            font-size: 14px;
+        }
+        
+        .joint-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            -webkit-appearance: none;
+            margin: 10px 0;
+        }
+        
+        .joint-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .joint-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .joint-limits {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 5px;
+        }
+        
+        .control-panel {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .speed-control {
+            flex: 1;
+        }
+        
+        .speed-label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .control-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #fff;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 5px;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .status-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .angles-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .angle-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .message.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        
+        .message.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        
+        .choreography-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .move-item {
+            background: rgba(255,255,255,0.1);
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .connected { background: #4CAF50; }
+        .disconnected { background: #f44336; }
+        .recording { background: #FF9800; }
+        .playing { background: #2196F3; }
+        .jiggling { background: #9C27B0; }
+        
+        .navigation {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+        
+        .nav-link {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .nav-link.current {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 MyCobot320 Web Controller</h1>
+        
+        <div class="navigation">
+            <a href="/" class="nav-link current">🏠 Main Controller</a>
+            <a href="/positions" class="nav-link">⚙️ Position Config</a>
+            <a href="/command-center" class="nav-link">🎮 Command Center</a>
+        </div>
+        
+        <div class="status-panel">
+            <div class="section-title">Robot Status</div>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div><span id="connection-indicator" class="status-indicator"></span>Connection</div>
+                    <div id="connection-status">Checking...</div>
+                </div>
+                <div class="status-item">
+                    <div>Recording</div>
+                    <div id="recording-status">Idle</div>
+                </div>
+                <div class="status-item">
+                    <div>Playing</div>
+                    <div id="playing-status">Idle</div>
+                </div>
+                <div class="status-item">
+                    <div>Jiggling</div>
+                    <div id="jiggling-status">Idle</div>
+                </div>
+                <div class="status-item">
+                    <div>Recorded Moves</div>
+                    <div id="moves-count">0</div>
+                </div>
+                <div class="status-item">
+                    <div>Video Recording</div>
+                    <div id="video-recording-status">Idle</div>
+                </div>
+            </div>
+            <div class="angles-display">
+                <div class="angle-item">J1: <span id="angle-0">0°</span></div>
+                <div class="angle-item">J2: <span id="angle-1">0°</span></div>
+                <div class="angle-item">J3: <span id="angle-2">0°</span></div>
+                <div class="angle-item">J4: <span id="angle-3">0°</span></div>
+                <div class="angle-item">J5: <span id="angle-4">0°</span></div>
+                <div class="angle-item">J6: <span id="angle-5">0°</span></div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-grid">
+            <div class="control-section">
+                <div class="section-title">Basic Controls</div>
+                <button onclick="runDemo()">Run Demo</button>
+                <button onclick="moveHome()">Home Position</button>
+                <button onclick="extend()">Extend</button>
+            </div>
+            
+            <div class="control-section">
+                <div class="section-title">Recording</div>
+                <button id="start-recording-btn" onclick="startRecording()" class="btn-primary">Start Recording</button>
+                <button id="capture-btn" onclick="capturePosition()" disabled>Capture Position</button>
+                <button id="stop-recording-btn" onclick="stopRecording()" class="btn-danger" disabled>Stop Recording</button>
+            </div>
+            
+            <div class="control-section">
+                <div class="section-title">Choreography</div>
+                <button id="play-btn" onclick="playChoreography()" class="btn-primary">Play</button>
+                <button id="stop-play-btn" onclick="stopChoreography()" class="btn-danger" disabled>Stop</button>
+                <button onclick="clearChoreography()" class="btn-warning">Clear All</button>
+                <div class="choreography-list" id="choreography-list">
+                    <div>No moves recorded</div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <div class="section-title">Manual Joint Control</div>
+                <div class="control-panel">
+                    <div class="speed-control">
+                        <label class="speed-label">Speed: <span id="speed-value">50</span>%</label>
+                        <input type="range" id="speed-slider" class="joint-slider" min="10" max="100" value="50" style="background: rgba(255,193,7,0.3);">
+                    </div>
+                    <button onclick="getCurrentPosition()" class="btn-primary">Sync Current</button>
+                    <button onclick="powerOff()" class="btn-warning">Power Off</button>
+                </div>
+                
+                <div id="joint-controls">
+                    <!-- Joint sliders will be populated by JavaScript -->
+                    <div class="joint-control">
+                        <div class="joint-header">
+                            <span class="joint-name">Test Joint</span>
+                            <span class="joint-value">0.0°</span>
+                        </div>
+                        <input type="range" class="joint-slider" min="-168" max="168" value="0" step="0.5">
+                        <div class="joint-limits">
+                            <span>-168°</span>
+                            <span>168°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <div class="section-title">Mouse Jiggler</div>
+                <button id="start-jiggle-btn" onclick="startJiggling()" class="btn-primary">Start Jiggling</button>
+                <button id="stop-jiggle-btn" onclick="stopJiggling()" class="btn-danger" disabled>Stop Jiggling</button>
+                <p style="font-size: 12px; opacity: 0.8; margin-top: 10px;">
+                    First record some moves, then use this to jiggle the mouse continuously.
+                </p>
+            </div>
+            
+            <div class="video-panel">
+                <div class="section-title">📹 Camera Feed</div>
+                <div class="video-container">
+                    <img id="video-stream" class="video-stream" src="/video_feed" alt="Camera Feed">
+                    <div id="video-placeholder" class="video-placeholder">
+                        Camera Off<br>
+                        <small>Click Start Camera to begin streaming</small>
+                    </div>
+                </div>
+                <button id="start-camera-btn" onclick="startCamera()" class="btn-primary">Start Camera</button>
+                <button id="stop-camera-btn" onclick="stopCamera()" class="btn-danger" disabled>Stop Camera</button>
+                <button id="screenshot-btn" onclick="takeScreenshot()" class="btn-warning" disabled>📸 Screenshot</button>
+                <br><br>
+                <button id="start-video-btn" onclick="startVideoRecording()" class="btn-primary" disabled>🎥 Start Recording</button>
+                <button id="stop-video-btn" onclick="stopVideoRecording()" class="btn-danger" disabled>⏹️ Stop Recording</button>
+                <div id="video-status" style="margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.8);"></div>
+            </div>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        let socket;
+        
+        // Initialize Socket.IO with error handling
+        try {
+            if (typeof io !== 'undefined') {
+                socket = io();
+                
+                socket.on('connect', function() {
+                    console.log('Connected to server');
+                    socket.emit('request_status');
+                });
+                
+                socket.on('status_update', function(data) {
+                    updateStatus(data);
+                });
+            } else {
+                console.warn('Socket.IO not available, using polling mode');
+                socket = null;
+            }
+        } catch (e) {
+            console.error('Socket.IO initialization failed:', e);
+            socket = null;
+        }
+        
+        function updateStatus(status) {
+            // Connection status
+            const indicator = document.getElementById('connection-indicator');
+            const connectionStatus = document.getElementById('connection-status');
+            if (status.connected) {
+                indicator.className = 'status-indicator connected';
+                connectionStatus.textContent = 'Connected';
+            } else {
+                indicator.className = 'status-indicator disconnected';
+                connectionStatus.textContent = 'Disconnected';
+            }
+            
+            // Angles
+            if (status.angles && !isManualControl) {
+                currentAngles = status.angles;
+                for (let i = 0; i < 6; i++) {
+                    const angleEl = document.getElementById(`angle-${i}`);
+                    if (angleEl) {
+                        angleEl.textContent = `${status.angles[i]?.toFixed(1) || 0}°`;
+                    }
+                }
+                // Update joint sliders if they exist
+                updateJointSliders();
+            } else if (status.angles) {
+                // During manual control, only update the status display, not sliders
+                for (let i = 0; i < 6; i++) {
+                    const angleEl = document.getElementById(`angle-${i}`);
+                    if (angleEl) {
+                        angleEl.textContent = `${status.angles[i]?.toFixed(1) || 0}°`;
+                    }
+                }
+            }
+            
+            // Update joint limits if provided
+            if (status.joint_limits) {
+                jointLimits = status.joint_limits;
+            }
+            
+            // Status indicators
+            document.getElementById('recording-status').textContent = status.is_recording ? 'Recording' : 'Idle';
+            document.getElementById('playing-status').textContent = status.is_playing ? 'Playing' : 'Idle';
+            document.getElementById('jiggling-status').textContent = status.is_jiggling ? 'Jiggling' : 'Idle';
+            document.getElementById('video-recording-status').textContent = status.is_recording_video ? 'Recording' : 'Idle';
+            document.getElementById('moves-count').textContent = status.recorded_moves_count || 0;
+            
+            // Update button states
+            updateButtonStates(status);
+        }
+        
+        function updateButtonStates(status) {
+            const startRecordingBtn = document.getElementById('start-recording-btn');
+            const captureBtn = document.getElementById('capture-btn');
+            const stopRecordingBtn = document.getElementById('stop-recording-btn');
+            const playBtn = document.getElementById('play-btn');
+            const stopPlayBtn = document.getElementById('stop-play-btn');
+            const startJiggleBtn = document.getElementById('start-jiggle-btn');
+            const stopJiggleBtn = document.getElementById('stop-jiggle-btn');
+            
+            // Recording buttons
+            startRecordingBtn.disabled = status.is_recording || status.is_playing || status.is_jiggling;
+            captureBtn.disabled = !status.is_recording;
+            stopRecordingBtn.disabled = !status.is_recording;
+            
+            // Choreography buttons
+            playBtn.disabled = status.is_playing || status.is_recording || status.is_jiggling || status.recorded_moves_count === 0;
+            stopPlayBtn.disabled = !status.is_playing;
+            
+            // Jiggle buttons
+            startJiggleBtn.disabled = status.is_jiggling || status.is_recording || status.is_playing || status.recorded_moves_count === 0;
+            stopJiggleBtn.disabled = !status.is_jiggling;
+        }
+        
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        async function apiCall(endpoint, method = 'POST') {
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.message, 'error');
+                }
+                
+                return data;
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+                return { success: false, message: error.message };
+            }
+        }
+        
+        function runDemo() { apiCall('/api/demo'); }
+        function moveHome() { apiCall('/api/home'); }
+        function extend() { apiCall('/api/extend'); }
+        function startRecording() { apiCall('/api/record/start'); }
+        function capturePosition() { apiCall('/api/record/capture'); }
+        function stopRecording() { apiCall('/api/record/stop'); }
+        function playChoreography() { apiCall('/api/choreography/play'); }
+        function stopChoreography() { apiCall('/api/choreography/stop'); }
+        function startJiggling() { apiCall('/api/jiggle/start'); }
+        function stopJiggling() { apiCall('/api/jiggle/stop'); }
+        function clearChoreography() { 
+            if (confirm('Are you sure you want to clear all recorded moves?')) {
+                apiCall('/api/choreography/clear');
+            }
+        }
+        
+        function startCamera() {
+            const videoStream = document.getElementById('video-stream');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            const startBtn = document.getElementById('start-camera-btn');
+            const stopBtn = document.getElementById('stop-camera-btn');
+            const screenshotBtn = document.getElementById('screenshot-btn');
+            const startVideoBtn = document.getElementById('start-video-btn');
+            
+            apiCall('/api/camera/start').then(data => {
+                if (data.success) {
+                    videoPlaceholder.style.display = 'none';
+                    videoStream.style.display = 'block';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    screenshotBtn.disabled = false;
+                    startVideoBtn.disabled = false;
+                }
+            });
+        }
+        
+        function stopCamera() {
+            const videoStream = document.getElementById('video-stream');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            const startBtn = document.getElementById('start-camera-btn');
+            const stopBtn = document.getElementById('stop-camera-btn');
+            const screenshotBtn = document.getElementById('screenshot-btn');
+            const startVideoBtn = document.getElementById('start-video-btn');
+            const stopVideoBtn = document.getElementById('stop-video-btn');
+            
+            // Stop video recording if active
+            if (!stopVideoBtn.disabled) {
+                stopVideoRecording();
+            }
+            
+            apiCall('/api/camera/stop').then(data => {
+                if (data.success) {
+                    videoStream.style.display = 'none';
+                    videoPlaceholder.style.display = 'flex';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    screenshotBtn.disabled = true;
+                    startVideoBtn.disabled = true;
+                }
+            });
+        }
+        
+        function takeScreenshot() {
+            fetch('/api/camera/screenshot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = data.image;
+                    link.download = `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    showMessage('Screenshot captured and downloaded!', 'success');
+                } else {
+                    showMessage('Screenshot failed: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            });
+        }
+        
+        // Video recording variables
+        let currentVideoFilename = null;
+        
+        function startVideoRecording() {
+            const startVideoBtn = document.getElementById('start-video-btn');
+            const stopVideoBtn = document.getElementById('stop-video-btn');
+            const videoStatus = document.getElementById('video-status');
+            
+            fetch('/api/video/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentVideoFilename = data.filename;
+                    startVideoBtn.disabled = true;
+                    stopVideoBtn.disabled = false;
+                    videoStatus.textContent = `Recording: ${data.filename}`;
+                    videoStatus.style.color = '#FF9800';
+                    showMessage('Video recording started!', 'success');
+                } else {
+                    showMessage('Failed to start video recording: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            });
+        }
+        
+        function stopVideoRecording() {
+            const startVideoBtn = document.getElementById('start-video-btn');
+            const stopVideoBtn = document.getElementById('stop-video-btn');
+            const videoStatus = document.getElementById('video-status');
+            
+            fetch('/api/video/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    startVideoBtn.disabled = false;
+                    stopVideoBtn.disabled = true;
+                    videoStatus.innerHTML = `Recording stopped. <a href="/api/video/download/${data.filename}" download style="color: #4CAF50;">Download ${data.filename}</a>`;
+                    videoStatus.style.color = '#4CAF50';
+                    showMessage('Video recording stopped! Click link to download.', 'success');
+                    currentVideoFilename = null;
+                } else {
+                    showMessage('Failed to stop video recording: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            });
+        }
+        
+        // Joint control variables
+        let currentAngles = [0, 0, 0, 0, 0, 0];
+        let jointLimits = [[-168, 168], [-135, 135], [-145, 145], [-148, 148], [-168, 168], [-180, 180]];
+        let isManualControl = false;
+        let manualControlTimeout;
+        
+        function initJointControls() {
+            const jointNames = ['Base', 'Shoulder', 'Elbow', 'Wrist 1', 'Wrist 2', 'Wrist 3'];
+            const controlsContainer = document.getElementById('joint-controls');
+            
+            if (!controlsContainer) {
+                console.error('joint-controls container not found');
+                return;
+            }
+            
+            controlsContainer.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                const [minAngle, maxAngle] = jointLimits[i];
+                const currentAngle = currentAngles[i] || 0;
+                const jointDiv = document.createElement('div');
+                jointDiv.className = 'joint-control';
+                jointDiv.innerHTML = `
+                    <div class="joint-header">
+                        <span class="joint-name">Joint ${i + 1} (${jointNames[i]})</span>
+                        <span class="joint-value" id="joint-value-${i}">${currentAngle.toFixed(1)}°</span>
+                    </div>
+                    <input type="range" 
+                           id="joint-slider-${i}" 
+                           class="joint-slider"
+                           min="${minAngle}" 
+                           max="${maxAngle}" 
+                           value="${currentAngle}" 
+                           step="0.5"
+                           oninput="moveJoint(${i}, this.value)">
+                    <div class="joint-limits">
+                        <span>${minAngle}°</span>
+                        <span>${maxAngle}°</span>
+                    </div>
+                `;
+                controlsContainer.appendChild(jointDiv);
+            }
+        }
+        
+        function moveJoint(jointId, angle) {
+            const speed = document.getElementById('speed-slider').value;
+            const angleValue = parseFloat(angle);
+            
+            // Set manual control mode to prevent status updates from interfering
+            isManualControl = true;
+            clearTimeout(manualControlTimeout);
+            
+            // Update display immediately for responsiveness
+            document.getElementById(`joint-value-${jointId}`).textContent = `${angleValue.toFixed(1)}°`;
+            currentAngles[jointId] = angleValue;
+            
+            // Send to robot
+            fetch('/api/joint/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    joint_id: jointId,
+                    angle: angleValue,
+                    speed: parseInt(speed)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    showMessage(data.message, 'error');
+                } else {
+                    // Update our local angles with the actual values from the robot
+                    if (data.angles) {
+                        currentAngles = data.angles;
+                    }
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Allow status updates again after 3 seconds
+                manualControlTimeout = setTimeout(() => {
+                    isManualControl = false;
+                }, 3000);
+            });
+        }
+        
+        function getCurrentPosition() {
+            // Reset manual control mode
+            isManualControl = false;
+            clearTimeout(manualControlTimeout);
+            
+            fetch('/api/joints/get_current')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentAngles = data.angles;
+                    updateJointSliders();
+                    showMessage('Current position synchronized', 'success');
+                } else {
+                    showMessage('Failed to get current position: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            });
+        }
+        
+        function updateJointSliders() {
+            for (let i = 0; i < 6; i++) {
+                const slider = document.getElementById(`joint-slider-${i}`);
+                const value = document.getElementById(`joint-value-${i}`);
+                if (slider && value && currentAngles[i] !== undefined) {
+                    slider.value = currentAngles[i] || 0;
+                    value.textContent = `${(currentAngles[i] || 0).toFixed(1)}°`;
+                }
+            }
+        }
+        
+        function powerOff() {
+            if (confirm('Are you sure you want to power off the robot?')) {
+                apiCall('/api/robot/power_off');
+            }
+        }
+        
+        // Update speed display
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing controls...');
+            
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            
+            if (speedSlider && speedValue) {
+                speedSlider.oninput = function() {
+                    speedValue.textContent = this.value;
+                };
+            }
+            
+            // Initialize joint controls after a delay to ensure DOM is ready
+            setTimeout(function() {
+                console.log('Initializing joint controls...');
+                initJointControls();
+                
+                // Get current position
+                setTimeout(function() {
+                    getCurrentPosition();
+                }, 500);
+            }, 100);
+        });
+        
+        // Request status updates every 2 seconds
+        function requestStatusUpdate() {
+            if (socket && socket.connected) {
+                socket.emit('request_status');
+            } else {
+                // Fallback to API polling when Socket.IO isn't available
+                fetch('/api/status')
+                    .then(response => response.json())
+                    .then(data => updateStatus(data))
+                    .catch(error => console.log('Status update failed:', error));
+            }
+        }
+        
+        setInterval(requestStatusUpdate, 2000);
+    </script>
+</body>
+</html>

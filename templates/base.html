@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MyCobot320 Web Controller{% endblock %}</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 {% block heading %}MyCobot320 Web Controller{% endblock %}</h1>
+        
+        <div class="navigation">
+            <a href="/" class="nav-link {% if request.endpoint == 'index' %}current{% endif %}">🏠 Main Controller</a>
+            <a href="/positions" class="nav-link {% if request.endpoint == 'positions_page' %}current{% endif %}">⚙️ Position Config</a>
+            <a href="/command-center" class="nav-link {% if request.endpoint == 'command_center_page' %}current{% endif %}">🎮 Command Center</a>
+        </div>
+        
+        {% block content %}{% endblock %}
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <!-- Core JavaScript -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

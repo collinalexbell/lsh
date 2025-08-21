@@ -1,5 +1,11 @@
 {
   "Camera": {
     "enabled": true
+  },
+  "Tao book": {
+    "enabled": true
+  },
+  "Zeus": {
+    "enabled": true
   }
 }

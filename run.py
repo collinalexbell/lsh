@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-MyCobot320 Web Controller - Refactored Entry Point
+Alternative entry point for the refactored MyCobot320 Web Controller
 
-This is a compatibility wrapper that imports the new modular application.
-The original app.py has been refactored into multiple modules for better organization.
+Usage:
+    python run.py          # Run with default config
+    python src/main.py     # Direct execution
 """
 
 import sys
