@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.robotController = new RobotController();
     }
     
-    // Initialize camera if on main page
-    if (document.getElementById('video-stream')) {
+    // Initialize camera controller if video elements exist
+    if (document.getElementById('video-stream') || document.getElementById('camera-feed')) {
         window.cameraController = new CameraController();
     }
     

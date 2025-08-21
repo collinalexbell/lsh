@@ -2,12 +2,74 @@
 class CameraController {
     constructor() {
         this.currentVideoFilename = null;
+        this.cameraActive = false;
         this.init();
     }
 
     init() {
-        // Initialize camera controls
+        // Initialize camera controls and check if camera was already active
         console.log('Camera controller initialized');
+        this.checkCameraState();
+    }
+
+    async checkCameraState() {
+        // Check if camera is already running on the server side
+        try {
+            // Always try to reconnect the video feed if elements exist
+            const videoStream = document.getElementById('video-stream');
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            
+            if (videoStream && videoPlaceholder) {
+                // Check if video feed is working by trying to load it
+                this.reconnectVideoFeed();
+                
+                // Update button states based on whether feed loads
+                setTimeout(() => {
+                    this.updateCameraButtons();
+                }, 1000);
+            }
+        } catch (error) {
+            console.log('Could not check camera state:', error);
+        }
+    }
+
+    updateCameraButtons() {
+        const videoStream = document.getElementById('video-stream');
+        const startBtn = document.getElementById('start-camera-btn');
+        const stopBtn = document.getElementById('stop-camera-btn');
+        const screenshotBtn = document.getElementById('screenshot-btn');
+        const startVideoBtn = document.getElementById('start-video-btn');
+
+        if (videoStream && videoStream.style.display !== 'none') {
+            // Camera appears to be active
+            this.cameraActive = true;
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+            if (screenshotBtn) screenshotBtn.disabled = false;
+            if (startVideoBtn) startVideoBtn.disabled = false;
+        } else {
+            // Camera appears to be inactive
+            this.cameraActive = false;
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (screenshotBtn) screenshotBtn.disabled = true;
+            if (startVideoBtn) startVideoBtn.disabled = true;
+        }
+    }
+
+    reconnectVideoFeed() {
+        const videoStream = document.getElementById('video-stream');
+        if (videoStream) {
+            // Force reload the video feed by updating src with timestamp
+            const timestamp = new Date().getTime();
+            videoStream.src = `/video_feed?t=${timestamp}`;
+            videoStream.style.display = 'block';
+            
+            const videoPlaceholder = document.getElementById('video-placeholder');
+            if (videoPlaceholder) {
+                videoPlaceholder.style.display = 'none';
+            }
+        }
     }
 
     async startCamera() {
@@ -20,12 +82,13 @@ class CameraController {
         
         const data = await ApiClient.call('/api/camera/start');
         if (data.success) {
-            videoPlaceholder.style.display = 'none';
-            videoStream.style.display = 'block';
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            screenshotBtn.disabled = false;
-            startVideoBtn.disabled = false;
+            this.cameraActive = true;
+            this.reconnectVideoFeed();
+            
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+            if (screenshotBtn) screenshotBtn.disabled = false;
+            if (startVideoBtn) startVideoBtn.disabled = false;
         }
     }
 
@@ -45,12 +108,14 @@ class CameraController {
         
         const data = await ApiClient.call('/api/camera/stop');
         if (data.success) {
-            videoStream.style.display = 'none';
-            videoPlaceholder.style.display = 'flex';
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            screenshotBtn.disabled = true;
-            startVideoBtn.disabled = true;
+            this.cameraActive = false;
+            
+            if (videoStream) videoStream.style.display = 'none';
+            if (videoPlaceholder) videoPlaceholder.style.display = 'flex';
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (screenshotBtn) screenshotBtn.disabled = true;
+            if (startVideoBtn) startVideoBtn.disabled = true;
         }
     }
 
