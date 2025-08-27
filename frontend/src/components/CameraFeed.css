@@ -5,11 +5,69 @@
   margin: 20px 0;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
-.camera-feed h2 {
-  margin: 0 0 20px 0;
+/* Sticky camera that follows scrolling */
+.camera-feed.camera-sticky {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 350px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+/* Minimized state */
+.camera-feed.camera-minimized {
+  height: auto;
+}
+
+.camera-feed.camera-sticky.camera-minimized {
+  width: 280px;
+}
+
+.camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.camera-header h2 {
+  margin: 0;
   color: white;
+  font-size: 18px;
+}
+
+.camera-controls-header {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 28px;
+  height: 28px;
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #607D8B, #455A64);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(45deg, #455A64, #37474F);
+  transform: scale(1.05);
 }
 
 .video-container {
@@ -23,12 +81,23 @@
   justify-content: center;
 }
 
+/* Smaller video in sticky mode */
+.camera-feed.camera-sticky .video-container {
+  min-height: 200px;
+  margin-bottom: 15px;
+}
+
 .video-stream {
   width: 100%;
   height: auto;
   border-radius: 8px;
   max-height: 400px;
   object-fit: contain;
+}
+
+/* Smaller video stream in sticky mode */
+.camera-feed.camera-sticky .video-stream {
+  max-height: 250px;
 }
 
 .video-placeholder {
@@ -120,4 +189,47 @@
   color: white;
   font-size: 14px;
   text-align: center;
+}
+
+/* Mobile responsive sticky camera */
+@media (max-width: 768px) {
+  .camera-feed.camera-sticky {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: 70vh;
+  }
+  
+  .camera-feed.camera-sticky.camera-minimized {
+    width: auto;
+    left: 10px;
+    right: 10px;
+  }
+  
+  .camera-header h2 {
+    font-size: 16px;
+  }
+  
+  .camera-buttons, .video-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .camera-buttons button, .video-controls button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .camera-feed.camera-sticky {
+    padding: 15px;
+  }
+  
+  .camera-buttons button, .video-controls button {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
 }

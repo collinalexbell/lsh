@@ -8,7 +8,11 @@ export function CameraFeed() {
   const [isStopping, setIsStopping] = useState(false);
   const [videoStatus, setVideoStatus] = useState('');
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [isSticky, setIsSticky] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const videoRef = useRef<HTMLImageElement>(null);
+  const cameraRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check initial camera state
@@ -23,6 +27,23 @@ export function CameraFeed() {
       videoRef.current.src = '';
     }
   }, [state.cameraActive]);
+
+  // Handle scroll events for sticky camera
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const hasScrolledNow = scrollY > 100;
+      
+      if (hasScrolledNow !== hasScrolled) {
+        setHasScrolled(hasScrolledNow);
+      }
+    };
+
+    if (isSticky) {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [isSticky, hasScrolled]);
 
   const checkCameraState = () => {
     // Auto-reconnect video feed if camera was active
@@ -183,76 +204,136 @@ export function CameraFeed() {
     }
   };
 
+  const toggleSticky = () => {
+    setIsSticky(!isSticky);
+    if (isSticky) {
+      // When disabling sticky, reset scroll state
+      setHasScrolled(false);
+    }
+  };
+
+  const toggleMinimized = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setHasScrolled(false);
+  };
+
+  // Determine camera classes based on state
+  const getCameraClasses = () => {
+    let classes = 'camera-feed';
+    if (isSticky && hasScrolled) {
+      classes += ' camera-sticky';
+    }
+    if (isMinimized) {
+      classes += ' camera-minimized';
+    }
+    return classes;
+  };
+
   return (
-    <div className="camera-feed">
-      <h2>📹 Camera Feed</h2>
+    <div ref={cameraRef} className={getCameraClasses()}>
+      <div className="camera-header">
+        <h2>📹 Camera Feed</h2>
+        <div className="camera-controls-header">
+          {isSticky && hasScrolled && (
+            <button 
+              onClick={scrollToTop} 
+              className="btn-secondary btn-small"
+              title="Scroll to top"
+            >
+              ⬆️
+            </button>
+          )}
+          <button 
+            onClick={toggleMinimized} 
+            className="btn-secondary btn-small"
+            title={isMinimized ? 'Expand camera' : 'Minimize camera'}
+          >
+            {isMinimized ? '⬆️' : '⬇️'}
+          </button>
+          <button 
+            onClick={toggleSticky} 
+            className={`btn-small ${isSticky ? 'btn-warning' : 'btn-secondary'}`}
+            title={isSticky ? 'Disable sticky camera' : 'Enable sticky camera'}
+          >
+            📌
+          </button>
+        </div>
+      </div>
       
-      <div className="video-container">
-        {state.cameraActive ? (
-          <img 
-            ref={videoRef}
-            className="video-stream" 
-            alt="Camera Feed"
-          />
-        ) : (
-          <div className="video-placeholder">
-            Camera Off<br/>
-            <small>Click Start Camera to begin streaming</small>
+      {!isMinimized && (
+        <>
+          <div className="video-container">
+            {state.cameraActive ? (
+              <img 
+                ref={videoRef}
+                className="video-stream" 
+                alt="Camera Feed"
+              />
+            ) : (
+              <div className="video-placeholder">
+                Camera Off<br/>
+                <small>Click Start Camera to begin streaming</small>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="camera-controls">
-        <div className="camera-buttons">
-          <button 
-            onClick={startCamera} 
-            disabled={isStarting || state.cameraActive}
-            className="btn-primary"
-          >
-            {isStarting ? 'Starting...' : 'Start Camera'}
-          </button>
-          
-          <button 
-            onClick={stopCamera} 
-            disabled={isStopping || !state.cameraActive}
-            className="btn-danger"
-          >
-            {isStopping ? 'Stopping...' : 'Stop Camera'}
-          </button>
-          
-          <button 
-            onClick={takeScreenshot} 
-            disabled={!state.cameraActive}
-            className="btn-warning"
-          >
-            📸 Screenshot
-          </button>
-        </div>
+          <div className="camera-controls">
+            <div className="camera-buttons">
+              <button 
+                onClick={startCamera} 
+                disabled={isStarting || state.cameraActive}
+                className="btn-primary"
+              >
+                {isStarting ? 'Starting...' : 'Start Camera'}
+              </button>
+              
+              <button 
+                onClick={stopCamera} 
+                disabled={isStopping || !state.cameraActive}
+                className="btn-danger"
+              >
+                {isStopping ? 'Stopping...' : 'Stop Camera'}
+              </button>
+              
+              <button 
+                onClick={takeScreenshot} 
+                disabled={!state.cameraActive}
+                className="btn-warning"
+              >
+                📸 Screenshot
+              </button>
+            </div>
 
-        <div className="video-controls">
-          <button 
-            onClick={startVideoRecording} 
-            disabled={!state.cameraActive || isRecordingVideo}
-            className="btn-primary"
-          >
-            🎥 Start Recording
-          </button>
-          
-          <button 
-            onClick={stopVideoRecording} 
-            disabled={!isRecordingVideo}
-            className="btn-danger"
-          >
-            ⏹️ Stop Recording
-          </button>
-        </div>
+            <div className="video-controls">
+              <button 
+                onClick={startVideoRecording} 
+                disabled={!state.cameraActive || isRecordingVideo}
+                className="btn-primary"
+              >
+                🎥 Start Recording
+              </button>
+              
+              <button 
+                onClick={stopVideoRecording} 
+                disabled={!isRecordingVideo}
+                className="btn-danger"
+              >
+                ⏹️ Stop Recording
+              </button>
+            </div>
 
-        {videoStatus && (
-          <div className="video-status">
-            {videoStatus}
+            {videoStatus && (
+              <div className="video-status">
+                {videoStatus}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
