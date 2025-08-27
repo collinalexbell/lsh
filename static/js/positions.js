@@ -122,6 +122,11 @@ class PositionManager {
             if (data.success) {
                 MessageHandler.show(data.message, 'success');
                 
+                // Track this position as the last saved position for individual servo reset
+                if (this.positions[name] && window.robotController) {
+                    window.robotController.setLastSavedPosition(name, this.positions[name].angles);
+                }
+                
                 // Update status if available
                 if (window.socketManager) {
                     window.socketManager.requestStatus();

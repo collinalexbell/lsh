@@ -15,18 +15,15 @@ class CameraController {
     async checkCameraState() {
         // Check if camera is already running on the server side
         try {
-            // Always try to reconnect the video feed if elements exist
             const videoStream = document.getElementById('video-stream');
             const videoPlaceholder = document.getElementById('video-placeholder');
             
             if (videoStream && videoPlaceholder) {
-                // Check if video feed is working by trying to load it
+                // Always try to reconnect the video feed
                 this.reconnectVideoFeed();
                 
-                // Update button states based on whether feed loads
-                setTimeout(() => {
-                    this.updateCameraButtons();
-                }, 1000);
+                // Immediately update button states - no delay needed
+                this.updateCameraButtons();
             }
         } catch (error) {
             console.log('Could not check camera state:', error);
@@ -60,9 +57,20 @@ class CameraController {
     reconnectVideoFeed() {
         const videoStream = document.getElementById('video-stream');
         if (videoStream) {
-            // Force reload the video feed by updating src with timestamp
-            const timestamp = new Date().getTime();
-            videoStream.src = `/video_feed?t=${timestamp}`;
+            // Set up error handling for video stream
+            videoStream.onerror = () => {
+                console.log('Video stream error, attempting reconnection...');
+                setTimeout(() => {
+                    if (this.cameraActive) {
+                        videoStream.src = `/video_feed?t=${new Date().getTime()}`;
+                    }
+                }, 1000);
+            };
+            
+            // Don't use timestamp - just ensure the feed is pointing to the right URL
+            if (videoStream.src !== `${window.location.origin}/video_feed`) {
+                videoStream.src = '/video_feed';
+            }
             videoStream.style.display = 'block';
             
             const videoPlaceholder = document.getElementById('video-placeholder');
@@ -80,15 +88,37 @@ class CameraController {
         const screenshotBtn = document.getElementById('screenshot-btn');
         const startVideoBtn = document.getElementById('start-video-btn');
         
-        const data = await ApiClient.call('/api/camera/start');
-        if (data.success) {
-            this.cameraActive = true;
-            this.reconnectVideoFeed();
+        // Immediately update UI for responsiveness
+        if (startBtn) startBtn.disabled = true;
+        MessageHandler.show('Starting camera...', 'success');
+        
+        try {
+            const response = await fetch('/api/camera/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
             
-            if (startBtn) startBtn.disabled = true;
-            if (stopBtn) stopBtn.disabled = false;
-            if (screenshotBtn) screenshotBtn.disabled = false;
-            if (startVideoBtn) startVideoBtn.disabled = false;
+            if (data.success) {
+                this.cameraActive = true;
+                this.reconnectVideoFeed();
+                
+                if (stopBtn) stopBtn.disabled = false;
+                if (screenshotBtn) screenshotBtn.disabled = false;
+                if (startVideoBtn) startVideoBtn.disabled = false;
+                
+                MessageHandler.show('Camera started successfully!', 'success');
+            } else {
+                // Revert UI on failure
+                if (startBtn) startBtn.disabled = false;
+                MessageHandler.show('Failed to start camera: ' + data.message, 'error');
+            }
+        } catch (error) {
+            // Revert UI on error
+            if (startBtn) startBtn.disabled = false;
+            MessageHandler.show('Network error: ' + error.message, 'error');
         }
     }
 
@@ -121,6 +151,9 @@ class CameraController {
 
     async takeScreenshot() {
         try {
+            // Show immediate feedback
+            MessageHandler.show('Taking screenshot...', 'success');
+            
             const response = await fetch('/api/camera/screenshot', {
                 method: 'POST',
                 headers: {
@@ -138,12 +171,25 @@ class CameraController {
                 link.click();
                 document.body.removeChild(link);
                 
+                // Add small delay before refreshing to allow screenshot processing to complete
+                setTimeout(() => {
+                    this.refreshVideoStream();
+                }, 500);
+                
                 MessageHandler.show('Screenshot captured and downloaded!', 'success');
             } else {
                 MessageHandler.show('Screenshot failed: ' + data.message, 'error');
             }
         } catch (error) {
             MessageHandler.show('Network error: ' + error.message, 'error');
+        }
+    }
+
+    refreshVideoStream() {
+        const videoStream = document.getElementById('video-stream');
+        if (videoStream && this.cameraActive) {
+            // Force refresh the video stream with a cache-busting parameter
+            videoStream.src = `/video_feed?t=${new Date().getTime()}`;
         }
     }
 

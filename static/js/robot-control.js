@@ -2,6 +2,8 @@
 class RobotController {
     constructor() {
         this.currentAngles = [0, 0, 0, 0, 0, 0];
+        this.lastSavedAngles = null;
+        this.lastSavedPositionName = null;
         this.jointLimits = [[-168, 168], [-135, 135], [-145, 145], [-148, 148], [-168, 168], [-180, 180]];
         this.jointNames = ['Base', 'Shoulder', 'Elbow', 'Wrist 1', 'Wrist 2', 'Wrist 3'];
         this.init();
@@ -9,7 +11,8 @@ class RobotController {
 
     init() {
         this.initSpeedControl();
-        this.initJointControls();
+        this.loadLastSavedPosition(); // Load first
+        this.initJointControls(); // Then create controls
         this.getCurrentPosition();
     }
 
@@ -43,6 +46,10 @@ class RobotController {
                 <div class="joint-header">
                     <span class="joint-name">Joint ${i + 1} (${this.jointNames[i]})</span>
                     <span class="joint-value" id="joint-value-${i}">${currentAngle.toFixed(1)}°</span>
+                    <button class="reset-joint-btn" id="reset-joint-${i}" 
+                            onclick="window.robotController.resetJointToSaved(${i})"
+                            style="display: none"
+                            title="Reset to last saved position">↺</button>
                 </div>
                 <input type="range" 
                        id="joint-slider-${i}" 
@@ -138,11 +145,124 @@ class RobotController {
         // Reinitialize controls with new limits
         this.initJointControls();
     }
+
+    setLastSavedPosition(positionName, angles) {
+        this.lastSavedPositionName = positionName;
+        this.lastSavedAngles = [...angles]; // Make a copy
+        this.updateResetButtons();
+        
+        // Persist to localStorage
+        try {
+            localStorage.setItem('lastSavedPosition', JSON.stringify({
+                name: positionName,
+                angles: angles,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.log('Could not save to localStorage:', e);
+        }
+    }
+
+    loadLastSavedPosition() {
+        try {
+            const saved = localStorage.getItem('lastSavedPosition');
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Only use if less than 24 hours old
+                if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                    this.lastSavedPositionName = data.name;
+                    this.lastSavedAngles = data.angles;
+                    this.updateResetButtons();
+                } else {
+                    localStorage.removeItem('lastSavedPosition');
+                }
+            }
+        } catch (e) {
+            console.log('Could not load from localStorage:', e);
+        }
+    }
+
+    updateResetButtons() {
+        console.log('Updating reset buttons, lastSavedAngles:', this.lastSavedAngles);
+        for (let i = 0; i < 6; i++) {
+            const resetBtn = document.getElementById(`reset-joint-${i}`);
+            console.log(`Reset button ${i}:`, resetBtn);
+            if (resetBtn) {
+                if (this.lastSavedAngles) {
+                    resetBtn.style.display = 'inline-block';
+                    resetBtn.title = `Reset to last saved position (${this.lastSavedPositionName || 'Unknown'})`;
+                    console.log(`Showing reset button ${i}`);
+                } else {
+                    resetBtn.style.display = 'none';
+                    console.log(`Hiding reset button ${i}`);
+                }
+            } else {
+                console.log(`Reset button ${i} not found in DOM`);
+            }
+        }
+    }
+
+    resetJointToSaved(jointId) {
+        if (!this.lastSavedAngles || this.lastSavedAngles[jointId] === undefined) {
+            MessageHandler.show('No saved position available for this joint', 'error');
+            return;
+        }
+
+        const savedAngle = this.lastSavedAngles[jointId];
+        const speed = document.getElementById('speed-slider').value;
+
+        // Update slider and display
+        const slider = document.getElementById(`joint-slider-${jointId}`);
+        const valueDisplay = document.getElementById(`joint-value-${jointId}`);
+        if (slider) slider.value = savedAngle;
+        if (valueDisplay) valueDisplay.textContent = `${savedAngle.toFixed(1)}°`;
+
+        // Set manual control mode
+        window.statusManager.setManualControl(true);
+
+        // Send to robot
+        fetch('/api/joint/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                joint_id: jointId,
+                angle: savedAngle,
+                speed: parseInt(speed)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.currentAngles[jointId] = savedAngle;
+                MessageHandler.show(`Joint ${jointId + 1} reset to saved position (${savedAngle.toFixed(1)}°)`, 'success');
+                if (data.angles) {
+                    this.currentAngles = data.angles;
+                }
+            } else {
+                MessageHandler.show(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            MessageHandler.show('Network error: ' + error.message, 'error');
+        });
+    }
 }
 
 // Expose globally
 window.getCurrentPosition = function() {
     if (window.robotController) {
         window.robotController.getCurrentPosition();
+    }
+};
+
+// Debug function to test buttons
+window.testResetButtons = function() {
+    console.log('Testing reset buttons...');
+    if (window.robotController) {
+        // Set fake saved position for testing
+        window.robotController.setLastSavedPosition('Test', [0, 0, 0, 0, 0, 0]);
+        console.log('Reset buttons should now be visible');
     }
 };

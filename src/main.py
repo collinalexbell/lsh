@@ -5,6 +5,7 @@ from flask_socketio import SocketIO, emit
 from .api.robot_routes import robot_bp
 from .api.camera_routes import camera_bp
 from .api.position_routes import position_bp
+from .api.react_routes import react_bp
 from .services.robot_controller import robot_controller
 from .services.position_service import position_service
 from .utils.config import SECRET_KEY, CORS_ALLOWED_ORIGINS, HOST, PORT, DEBUG
@@ -24,18 +25,19 @@ def create_app():
     app.register_blueprint(robot_bp)
     app.register_blueprint(camera_bp)
     app.register_blueprint(position_bp)
+    app.register_blueprint(react_bp)
     
-    # Main page routes
-    @app.route('/')
-    def index():
+    # Legacy template routes (keep for backwards compatibility)
+    @app.route('/legacy')
+    def legacy_index():
         return render_template('index.html')
     
-    @app.route('/positions')
-    def positions_page():
+    @app.route('/legacy/positions')
+    def legacy_positions_page():
         return render_template('positions.html')
     
-    @app.route('/command-center')
-    def command_center_page():
+    @app.route('/legacy/command-center')
+    def legacy_command_center_page():
         return render_template('command_center.html')
     
     # SocketIO event handlers
@@ -59,7 +61,7 @@ def main():
     app, socketio = create_app()
     
     print(f"Server starting on {HOST}:{PORT}")
-    socketio.run(app, host=HOST, port=PORT, debug=DEBUG)
+    socketio.run(app, host=HOST, port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
 
 if __name__ == '__main__':
     main()
