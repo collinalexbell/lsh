@@ -1,204 +1,262 @@
-# MyCobot320 Web Controller 🤖
+# MyCobot320 React Web Controller 🤖
 
-A comprehensive web-based controller for the MyCobot320 robotic arm with live webcam streaming, video recording, and advanced joint control capabilities.
+A modern, React-powered web controller for the MyCobot320 robotic arm featuring individual servo reset functionality, sticky camera interface, and comprehensive robot control capabilities.
 
-## Features
+## ✨ Key Features
 
-### 🎯 Robot Control
-- **Basic Movement**: Demo routines, home position, extend position
-- **Manual Joint Control**: Real-time slider control for all 6 joints with safety limits
-- **Choreography Recording**: Record and playback custom movement sequences
-- **Mouse Jiggler Mode**: Continuous movement using recorded choreographies
-- **Saved Positions**: Save, manage, and quickly move to named robot positions
-- **Command Center**: Quick-access interface for enabled saved positions
+### 🎯 Advanced Robot Control
+- **Individual Servo Reset**: Reset any joint to its last saved position with dedicated reset buttons
+- **Manual Joint Control**: Real-time slider control for all 6 joints with safety limits  
+- **Smart Position Management**: Save, load, and manage named robot positions
+- **Basic Movements**: Demo routines, home position, extend position with one-click execution
+- **Live Angle Feedback**: Real-time display of current joint positions
 
-### 📹 Camera & Media
-- **Live Webcam Streaming**: Real-time video feed from connected camera
-- **Screenshot Capture**: Take and download instant photos from webcam
-- **Video Recording**: Record live video while controlling the robot
-- **Auto Download**: Screenshots and videos automatically download to browser
+### 📹 Sticky Camera Interface
+- **Floating Camera Feed**: Camera follows you while scrolling, stays visible in top-right corner
+- **Smart Controls**: Minimize/expand, sticky toggle, and scroll-to-top functionality
+- **Live Video Stream**: Real-time MJPEG feed with automatic reconnection
+- **Screenshot Capture**: Instant photo capture with auto-download and stream refresh
+- **Video Recording**: Record robot operations with start/stop controls
+- **Mobile Responsive**: Adaptive camera interface for all screen sizes
 
-### 🌐 Web Interface
-- **Responsive Design**: Modern glassmorphism UI that works on desktop and mobile
-- **Multi-page Navigation**: Main controller, position configuration, and command center
-- **Real-time Status**: Live joint angles, connection status, and operation feedback
-- **WebSocket Integration**: Real-time updates via Socket.IO
-- **Progress Tracking**: Visual feedback for all operations
+### ⚛️ Modern React Architecture
+- **TypeScript Frontend**: Type-safe React components with modern hooks
+- **Reactive State Management**: Context-based state eliminates DOM manipulation issues
+- **Component-Based Design**: Modular, maintainable, and extensible codebase
+- **Vite Build System**: Fast development and optimized production builds
+- **Real-time Updates**: Automatic UI updates when robot state changes
 
-### 🛡️ Safety Features
-- **Joint Limits**: Software-enforced angle limits for each joint
-- **Power Management**: Controlled power on/off functionality
-- **Error Handling**: Comprehensive error reporting and recovery
+### 🛡️ Safety & Reliability
+- **Joint Limits**: Software-enforced angle constraints for each servo
+- **Error Recovery**: Automatic reconnection for video streams and robot communication
+- **Power Management**: Safe robot power control with status feedback
+- **Position Validation**: Input validation and safety checks for all movements
 
-## Requirements
+## 🚀 Quick Start
 
+### Prerequisites
 - **Hardware**: MyCobot320 robotic arm
-- **OS**: Raspberry Pi OS or Linux system
-- **Camera**: USB webcam (tested with /dev/video0)
-- **Python**: 3.8+
+- **OS**: Raspberry Pi OS or Linux system with camera support
+- **Node.js**: 18+ (for React development)
+- **Python**: 3.8+ (for robot control backend)
 
-## Installation
+### Installation
 
-1. **Clone the repository**:
+1. **Clone and setup**:
    ```bash
-   git clone <repository-url>
-   cd mycobot-web-controller
-   ```
-
-2. **Install dependencies**:
-   ```bash
+   git clone https://github.com/collinalexbell/lsh.git
+   cd lsh
    pip install -r requirements.txt
    ```
 
-3. **Connect hardware**:
-   - Connect MyCobot320 to `/dev/ttyAMA0` at 115200 baud rate
-   - Connect USB webcam to `/dev/video0`
+2. **Hardware connections**:
+   - MyCobot320 → `/dev/ttyAMA0` (115200 baud)
+   - USB Camera → `/dev/video0`
 
-4. **Run the application**:
+3. **Start the application**:
    ```bash
-   python3 app.py
-   ```
-   
-   Or use the provided script to start/reconnect to a tmux session:
-   ```bash
-   ./start_claude.sh
+   python -m src.main
    ```
 
-5. **Access the web interface**:
-   Open `http://localhost:5000` in your browser
+4. **Access the interface**:
+   Open `http://localhost:5000` or `http://[your-device-ip]:5000`
 
-## Usage
+## 🎮 How to Use
 
-### Basic Operation
-1. **Start Camera**: Click "Start Camera" to begin webcam streaming
-2. **Control Robot**: Use manual joint sliders or preset movements
-3. **Record Movements**: Start recording, move joints manually, capture positions
-4. **Playback**: Play recorded choreographies or enable jiggle mode
+### Individual Servo Reset (Key Feature)
+1. **Move to any saved position** using the blue position buttons
+2. **Adjust individual servos** using the manual control sliders  
+3. **Click orange RESET buttons** next to any joint to restore it to the saved position
+4. **Reset buttons persist** across page reloads for 24 hours
+
+### Sticky Camera Operation
+1. **Start camera** and begin scrolling down the page
+2. **Camera automatically follows** - becomes sticky in top-right corner
+3. **Use controls**: 📌 (toggle sticky), ⬇️ (minimize), ⬆️ (scroll to top)
+4. **Full functionality maintained** - screenshot and recording work in sticky mode
 
 ### Position Management
-1. **Save Positions**: Use current robot position to create named saved positions
-2. **Configure Positions**: Enable/disable positions for command center display
-3. **Command Center**: Quick-access buttons for moving to enabled positions
-4. **Position Navigation**: Switch between main controller, position config, and command center
+1. **Create positions**: Move robot manually → enter name → save current position  
+2. **Quick access**: Use saved position buttons for instant movement
+3. **Enable/disable**: Configure which positions appear in interface
+4. **Individual reset**: Use reset buttons to restore specific joints
 
-### Media Capture
-1. **Screenshots**: Click "📸 Screenshot" while camera is active
-2. **Video Recording**: Click "🎥 Start Recording", control robot, then "⏹️ Stop Recording"
-3. **Downloads**: Media files automatically download to your browser
+## 🏗️ Architecture
 
-### Safety Guidelines
-- Always ensure robot has clear movement space
-- Use "Home Position" to return to safe starting position
-- Power off robot when not in use
-- Monitor joint limits displayed in the interface
+### Frontend (React + TypeScript)
+```
+frontend/
+├── src/
+│   ├── components/           # React components
+│   │   ├── CameraFeed.tsx   # Sticky camera with controls
+│   │   ├── JointControl.tsx # Individual servo with reset button
+│   │   ├── RobotController.tsx # Main robot interface
+│   │   ├── PositionManager.tsx # Saved positions
+│   │   └── SavePosition.tsx # Position creation
+│   ├── contexts/
+│   │   └── RobotContext.tsx # Global state management
+│   └── types/
+│       └── robot.ts         # TypeScript definitions
+├── package.json             # Node.js dependencies
+├── vite.config.ts          # Build configuration
+└── dist/ → static/react-build/ # Production build
+```
 
-## API Endpoints
+### Backend (Flask + Python)
+```
+src/
+├── api/                     # REST API routes
+│   ├── robot_routes.py     # Robot movement endpoints
+│   ├── camera_routes.py    # Camera and video endpoints
+│   ├── position_routes.py  # Position management
+│   └── react_routes.py     # Frontend serving
+├── services/               # Business logic
+│   ├── robot_controller.py # MyCobot320 interface
+│   ├── camera_service.py   # Video streaming
+│   └── position_service.py # Position storage
+└── main.py                 # Application entry point
+```
+
+## 🔌 API Reference
 
 ### Robot Control
-- `POST /api/demo` - Run demonstration sequence
+- `GET /api/joints/get_current` - Get current joint angles
+- `POST /api/joint/move` - Move individual joint
+- `POST /api/demo` - Run demonstration sequence  
 - `POST /api/home` - Move to home position
 - `POST /api/extend` - Move to extended position
-- `POST /api/joint/move` - Move individual joint
-- `POST /api/robot/power_off` - Power off robot
 
-### Choreography
-- `POST /api/record/start` - Start recording movements
-- `POST /api/record/capture` - Capture current position
-- `POST /api/record/stop` - Stop recording
-- `POST /api/choreography/play` - Play recorded sequence
-- `POST /api/choreography/clear` - Clear recorded movements
-
-### Saved Positions
-- `GET /api/positions` - Get all saved positions and configuration
-- `POST /api/positions/save` - Save current robot position with name
-- `POST /api/positions/delete` - Delete a saved position
-- `POST /api/positions/update_config` - Enable/disable position for command center
-- `POST /api/positions/move_to/<name>` - Move robot to saved position
+### Position Management
+- `GET /api/positions` - Get all saved positions
+- `POST /api/positions/save` - Save current position
+- `POST /api/positions/move_to/<name>` - Move to saved position
+- `POST /api/positions/delete` - Delete position
 
 ### Camera & Media
 - `GET /video_feed` - MJPEG video stream
-- `POST /api/camera/start` - Start camera
-- `POST /api/camera/stop` - Stop camera
+- `POST /api/camera/start` - Start camera stream
+- `POST /api/camera/stop` - Stop camera stream  
 - `POST /api/camera/screenshot` - Capture screenshot
 - `POST /api/video/start` - Start video recording
 - `POST /api/video/stop` - Stop video recording
-- `GET /api/video/download/<filename>` - Download recorded video
 
-## File Structure
+## 🔧 Development
 
-```
-mycobot-web-controller/
-├── app.py                    # Main Flask application
-├── templates/
-│   ├── index.html           # Main controller interface
-│   ├── positions.html       # Position management page  
-│   └── command_center.html  # Quick-access command center
-├── videos/                  # Recorded videos (created at runtime)
-├── saved_positions.json     # Stored robot positions
-├── position_config.json     # Position enable/disable settings
-├── start_claude.sh          # Script to start/reconnect Claude tmux session
-├── requirements.txt         # Python dependencies
-├── test_screenshot.py       # Screenshot functionality test
-├── test_video_recording.py  # Video recording test
-└── README.md               # This file
+### Frontend Development
+```bash
+cd frontend
+npm install
+npm run dev    # Development server with hot reload
+npm run build  # Production build
 ```
 
-## Technical Details
+### React Component Development  
+- **State Management**: Use `useRobot()` hook for global state
+- **TypeScript**: All components are fully typed
+- **Styling**: CSS modules with responsive design
+- **Testing**: Components designed for easy testing
 
-### Video Recording
-- **Format**: MP4 (H.264)
-- **Resolution**: 640x480
-- **Frame Rate**: 20 FPS
-- **Storage**: Local filesystem with web download
+### Backend Development
+- **Modular Architecture**: Clean separation of concerns
+- **Error Handling**: Comprehensive error reporting
+- **Real-time Updates**: WebSocket support via Socket.IO
+- **API Documentation**: RESTful endpoints with clear responses
 
-### Joint Control
-- **6 DOF Control**: All MyCobot320 joints supported
-- **Safety Limits**: Per-joint angle constraints
-- **Real-time Feedback**: Live angle display and status updates
+## 📱 Responsive Design
 
-### Communication
-- **Serial**: Direct USB/UART communication with MyCobot320
-- **WebSocket**: Real-time browser updates via Socket.IO
-- **REST API**: Standard HTTP endpoints for all operations
+### Desktop Experience
+- **Two-column layout**: Robot controls left, sticky camera right
+- **Full feature set**: All functionality accessible
+- **Keyboard shortcuts**: Enhanced productivity features
 
-## Development & Testing
+### Mobile Experience  
+- **Single-column layout**: Optimized for touch interaction
+- **Sticky camera bar**: Full-width camera at top when scrolling
+- **Touch-friendly controls**: Large buttons and gesture support
 
-The project includes automated test scripts:
+## 🚀 Advanced Features
 
-- **Screenshot Test**: `python3 test_screenshot.py`
-- **Video Recording Test**: `python3 test_video_recording.py`
+### Individual Servo Reset System
+- **Smart tracking**: Automatically remembers last used saved position
+- **Persistent storage**: Uses localStorage with 24-hour expiry
+- **Visual feedback**: Orange reset buttons with tooltips
+- **Selective reset**: Reset any combination of joints independently
 
-Tests use Playwright for browser automation and validate full functionality.
+### Sticky Camera Technology
+- **Scroll detection**: Activates after 100px scroll
+- **Smooth transitions**: CSS animations for professional feel
+- **State preservation**: Maintains all camera functionality when sticky
+- **User preferences**: Toggle sticky behavior on/off
 
-## Contributing
+### Position Management
+- **JSON storage**: Positions saved in `saved_positions.json`
+- **Configuration system**: Enable/disable positions in `position_config.json`
+- **Real-time updates**: UI updates immediately when positions change
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+## 🧪 Testing
 
-## License
+Automated test suite included:
+```bash
+python3 test_screenshot.py      # Screenshot functionality
+python3 test_video_recording.py # Video capture  
+python3 test_camera_freeze.py   # Stream reliability
+```
 
-This project is open source. Please ensure compliance with MyCobot320 usage guidelines.
+## 🔗 Legacy Support
 
-## Troubleshooting
+Original jQuery interface available at:
+- **Main controller**: `http://localhost:5000/legacy`
+- **Position management**: `http://localhost:5000/legacy/positions`  
+- **Command center**: `http://localhost:5000/legacy/command-center`
 
-### Robot Connection Issues
-- Verify `/dev/ttyAMA0` permissions: `sudo chmod 666 /dev/ttyAMA0`
-- Check baud rate setting (115200)
-- Ensure robot is powered on
+## ⚠️ Troubleshooting
 
-### Camera Issues
-- Verify camera device: `ls /dev/video*`
-- Test camera: `v4l2-ctl --list-devices`
-- Check permissions: `sudo usermod -a -G video $USER`
+### React App Issues
+- **Build errors**: Run `cd frontend && npm install && npm run build`
+- **TypeScript errors**: Check component imports and types
+- **State issues**: Verify React Context provider is wrapping components
 
-### Web Interface Issues
-- Clear browser cache
-- Check console for JavaScript errors
-- Verify Flask server is running on correct port
+### Robot Connection
+- **Permission**: `sudo chmod 666 /dev/ttyAMA0`
+- **Baud rate**: Ensure 115200 baud rate setting
+- **Power**: Verify robot is powered on and connected
+
+### Camera Problems  
+- **Device access**: Check `/dev/video*` permissions
+- **Stream freezing**: Refresh page or restart camera service
+- **Mobile issues**: Try landscape orientation for better experience
+
+### Performance Optimization
+- **Slow UI**: Check browser console for errors
+- **Memory usage**: Restart Flask server if running for extended periods
+- **Network latency**: Use device IP instead of localhost for remote access
+
+## 🤝 Contributing
+
+1. **Fork** the repository
+2. **Create feature branch**: `git checkout -b feature/amazing-feature`
+3. **Frontend changes**: Work in `frontend/src/` with TypeScript
+4. **Backend changes**: Follow Flask blueprint patterns in `src/api/`  
+5. **Test thoroughly**: Use provided test scripts
+6. **Submit PR**: Include description of changes and testing performed
+
+## 🏆 What's New in React Version
+
+### Major Improvements
+- **✅ Individual servo reset buttons** - The core requested feature
+- **✅ Sticky camera interface** - Follows you while scrolling
+- **✅ Modern React architecture** - Eliminates DOM manipulation issues
+- **✅ TypeScript support** - Type-safe development
+- **✅ Mobile responsive** - Works perfectly on all devices
+- **✅ Better error handling** - Graceful failure and recovery
+- **✅ Component modularity** - Easy to extend and maintain
+
+### Performance Benefits
+- **Faster rendering** with React's virtual DOM
+- **Optimized builds** with Vite bundling
+- **Reduced network requests** with efficient state management
+- **Better caching** with modern build tools
 
 ---
 
-Built with ❤️ for robotics automation and remote control applications.
+**Built with ❤️ using React, TypeScript, and modern web technologies for seamless robot control.**
