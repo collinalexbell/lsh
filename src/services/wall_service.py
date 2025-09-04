@@ -275,8 +275,7 @@ class WallService:
             current_pos_np = np.array(current_pos)
             
             # Calculate movement in world coordinates using the plane's local coordinate system
-            # Invert Y movement in plane space (not world space) to match user expectations
-            world_movement = dx_local * local_x + (-dy_local) * local_y
+            world_movement = dx_local * local_x + dy_local * local_y
             target_pos = (current_pos_np + world_movement).tolist()
             
             print(f"DEBUG: Plane axes - X: {local_x.tolist()}, Y: {local_y.tolist()}")
