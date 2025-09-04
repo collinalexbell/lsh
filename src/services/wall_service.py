@@ -174,7 +174,7 @@ class WallService:
         # Extract the coordinate axes from the rotation matrix
         # These represent the end effector's actual coordinate system
         local_x_axis = R[:, 0].tolist()  # End effector's X-axis direction in world space
-        local_y_axis = (-R[:, 1]).tolist()  # End effector's Y-axis direction in world space (inverted)
+        local_y_axis = R[:, 1].tolist()  # End effector's Y-axis direction in world space
         normal = R[:, 2].tolist()        # End effector's Z-axis direction (normal to working plane)
         
         print(f"DEBUG: Calculated plane axes - X: {local_x_axis}, Y: {local_y_axis}, Normal: {normal}")
@@ -275,7 +275,8 @@ class WallService:
             current_pos_np = np.array(current_pos)
             
             # Calculate movement in world coordinates using the plane's local coordinate system
-            world_movement = dx_local * local_x + dy_local * local_y
+            # Invert Y movement in plane space (not world space) to match user expectations
+            world_movement = dx_local * local_x + (-dy_local) * local_y
             target_pos = (current_pos_np + world_movement).tolist()
             
             print(f"DEBUG: Plane axes - X: {local_x.tolist()}, Y: {local_y.tolist()}")
