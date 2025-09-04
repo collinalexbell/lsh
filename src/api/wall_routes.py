@@ -180,7 +180,7 @@ def move_in_plane():
         data = request.json or {}
         calibration_name = data.get('calibrationName', '').strip()
         dx_local = data.get('dxLocal', 0.0)  # Movement in local X (mm)
-        dy_local = -data.get('dyLocal', 0.0)  # Movement in local Y (mm) - inverted to match user expectations
+        dy_local = data.get('dyLocal', 0.0)  # Movement in local Y (mm)
         
         if not calibration_name:
             return jsonify({'success': False, 'message': 'Calibration name is required'})
