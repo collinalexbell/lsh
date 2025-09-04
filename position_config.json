@@ -1,11 +1,35 @@
 {
-  "Camera": {
+  "New Home": {
     "enabled": true
   },
-  "Tao book": {
+  "Extend": {
     "enabled": true
   },
-  "Zeus": {
+  "Start": {
+    "enabled": true
+  },
+  "Dip": {
+    "enabled": true
+  },
+  "Dip down": {
+    "enabled": true
+  },
+  "No Drip 1": {
+    "enabled": true
+  },
+  "No Drip 2": {
+    "enabled": true
+  },
+  "No Drip 3": {
+    "enabled": true
+  },
+  "Paint ready": {
+    "enabled": true
+  },
+  "Test IK": {
+    "enabled": true
+  },
+  "Wall Calibration": {
     "enabled": true
   }
 }

@@ -1,0 +1,306 @@
+.apriltag-detector {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.apriltag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.apriltag-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apriltag-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.apriltag-notice {
+  background: var(--warning-background, #fff3cd);
+  border: 1px solid var(--warning-border, #ffeaa7);
+  color: var(--warning-text, #856404);
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.apriltag-config {
+  background: var(--secondary-background, #f8f9fa);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.apriltag-config h3 {
+  margin: 0 0 15px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.config-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.config-item label {
+  min-width: 100px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.tag-size-input {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  width: 80px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.tag-size-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.config-info {
+  margin-top: 15px;
+  padding: 10px;
+  background: var(--info-background, #e3f2fd);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.config-info p {
+  margin: 5px 0;
+  color: var(--text-secondary);
+}
+
+.calibration-panel {
+  background: var(--primary-background, #e8f4fd);
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.calibration-panel h4 {
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.calibration-panel p {
+  color: var(--text-secondary);
+  margin-bottom: 15px;
+}
+
+.calibration-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.distance-input {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  width: 120px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.distance-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.detection-results {
+  margin-bottom: 20px;
+}
+
+.detection-results h3 {
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detection-list {
+  display: grid;
+  gap: 15px;
+}
+
+.detection-item {
+  background: var(--success-background, #d4edda);
+  border: 1px solid var(--success-border, #c3e6cb);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.detection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.tag-id {
+  font-weight: bold;
+  color: var(--success-text, #155724);
+  font-size: 16px;
+}
+
+.tag-distance {
+  background: var(--primary-color, #007bff);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.detection-details {
+  display: grid;
+  gap: 5px;
+}
+
+.detection-details p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+}
+
+.detection-image {
+  margin-bottom: 20px;
+}
+
+.detection-image h3 {
+  color: var(--text-primary);
+  margin-bottom: 15px;
+}
+
+.detection-img {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-detections {
+  background: var(--info-background, #d1ecf1);
+  border: 1px solid var(--info-border, #bee5eb);
+  color: var(--info-text, #0c5460);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.no-detections p {
+  margin: 5px 0;
+}
+
+/* Button overrides for AprilTag component */
+.apriltag-detector .btn-small {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.apriltag-detector .btn-primary {
+  background: var(--primary-color, #007bff);
+  color: white;
+}
+
+.apriltag-detector .btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover, #0056b3);
+}
+
+.apriltag-detector .btn-secondary {
+  background: var(--secondary-color, #6c757d);
+  color: white;
+}
+
+.apriltag-detector .btn-secondary:hover:not(:disabled) {
+  background: var(--secondary-hover, #545b62);
+}
+
+.apriltag-detector .btn-warning {
+  background: var(--warning-color, #ffc107);
+  color: var(--warning-text, #212529);
+}
+
+.apriltag-detector .btn-warning:hover:not(:disabled) {
+  background: var(--warning-hover, #e0a800);
+}
+
+.apriltag-detector button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .apriltag-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .config-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .config-item label {
+    min-width: auto;
+  }
+  
+  .calibration-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .detection-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

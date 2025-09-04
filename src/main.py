@@ -5,9 +5,13 @@ from flask_socketio import SocketIO, emit
 from .api.robot_routes import robot_bp
 from .api.camera_routes import camera_bp
 from .api.position_routes import position_bp
+from .api.procedure_routes import procedure_bp
 from .api.react_routes import react_bp
+from .api.apriltag_routes import apriltag_bp
+from .api.wall_routes import wall_bp
 from .services.robot_controller import robot_controller
 from .services.position_service import position_service
+from .services.procedure_service import procedure_service
 from .utils.config import SECRET_KEY, CORS_ALLOWED_ORIGINS, HOST, PORT, DEBUG
 
 def create_app():
@@ -25,7 +29,10 @@ def create_app():
     app.register_blueprint(robot_bp)
     app.register_blueprint(camera_bp)
     app.register_blueprint(position_bp)
+    app.register_blueprint(procedure_bp)
     app.register_blueprint(react_bp)
+    app.register_blueprint(apriltag_bp)
+    app.register_blueprint(wall_bp)
     
     # Legacy template routes (keep for backwards compatibility)
     @app.route('/legacy')
@@ -55,8 +62,9 @@ def main():
     """Main entry point"""
     print("Starting MyCobot320 Web Controller...")
     
-    # Load saved positions on startup
+    # Load saved positions and procedures on startup
     print(f"Loaded {position_service.get_position_count()} saved positions")
+    print(f"Loaded {procedure_service.get_procedure_count()} saved procedures")
     
     app, socketio = create_app()
     

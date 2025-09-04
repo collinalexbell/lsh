@@ -7,8 +7,11 @@ import time
 @dataclass
 class RobotState:
     """Manages the current state of the robot"""
-    # Joint angles (what we want the robot to be at)
-    target_angles: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    # Joint angles (what we believe the robot should currently be at)
+    ideal_angles: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    
+    # Plane movement flag to know when to use ideal coordinates vs robot readings
+    plane_mode_active: bool = False
     
     # Power and control state
     robot_powered: bool = False
@@ -38,7 +41,7 @@ class RobotState:
         with self._lock:
             return {
                 'connected': connected,
-                'angles': angles or self.target_angles.copy(),
+                'angles': angles or self.ideal_angles.copy(),
                 'is_recording': self.is_recording,
                 'is_playing': self.is_playing,
                 'is_jiggling': self.is_jiggling,
@@ -52,23 +55,47 @@ class RobotState:
         from ..utils.config import ANGLE_LIMITS
         return ANGLE_LIMITS
     
-    def update_target_angles(self, angles: List[float]):
-        """Update target angles thread-safely"""
+    def update_ideal_angles(self, angles: List[float]):
+        """Update ideal angles thread-safely"""
         with self._lock:
-            self.target_angles = angles.copy()
+            self.ideal_angles = angles.copy()
             self.state_initialized = True
     
     def update_joint_angle(self, joint_id: int, angle: float):
         """Update a single joint angle"""
         with self._lock:
-            if 0 <= joint_id < len(self.target_angles):
-                self.target_angles[joint_id] = angle
+            if 0 <= joint_id < len(self.ideal_angles):
+                self.ideal_angles[joint_id] = angle
                 self.state_initialized = True
     
-    def get_target_angles(self) -> List[float]:
-        """Get current target angles thread-safely"""
+    def get_ideal_angles(self) -> List[float]:
+        """Get current ideal angles thread-safely"""
         with self._lock:
-            return self.target_angles.copy()
+            return self.ideal_angles.copy()
+    
+    def get_ideal_cartesian(self, robot_controller) -> Optional[List[float]]:
+        """Get ideal Cartesian coordinates from ideal angles using forward kinematics"""
+        with self._lock:
+            if not self.state_initialized:
+                return None
+            try:
+                # Use MyCobot's forward kinematics to calculate cartesian from ideal angles
+                # NEVER query the robot - only use the ideal state
+                coords = robot_controller._mc.angles_to_coords(self.ideal_angles)
+                if coords and len(coords) >= 6:
+                    return coords
+                else:
+                    print(f"DEBUG: Forward kinematics failed for ideal angles: {self.ideal_angles}")
+                    return None
+            except Exception as e:
+                print(f"DEBUG: Error calculating ideal cartesian from angles {self.ideal_angles}: {e}")
+                return None
+    
+    def set_plane_mode(self, active: bool):
+        """Set plane movement mode"""
+        with self._lock:
+            self.plane_mode_active = active
+    
     
     def set_power_state(self, powered: bool):
         """Set robot power state"""

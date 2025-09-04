@@ -1,0 +1,46 @@
+{
+  "Paint": {
+    "steps": [
+      {
+        "data": "New Home",
+        "type": "position"
+      },
+      {
+        "data": "Start",
+        "type": "position"
+      },
+      {
+        "data": "Dip",
+        "type": "position"
+      },
+      {
+        "data": "Dip down",
+        "type": "position"
+      },
+      {
+        "data": "Dip",
+        "type": "position"
+      },
+      {
+        "data": "No Drip 1",
+        "type": "position"
+      },
+      {
+        "data": "No Drip 2",
+        "type": "position"
+      },
+      {
+        "data": "No Drip 3",
+        "type": "position"
+      },
+      {
+        "type": "position",
+        "data": "Paint ready"
+      }
+    ],
+    "description": "",
+    "created": "2025-09-04 00:19:58",
+    "updated": "2025-09-04 00:36:44",
+    "step_count": 9
+  }
+}

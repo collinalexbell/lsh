@@ -13,6 +13,7 @@ ROBOT_BAUDRATE = 115200
 BASE_DIR = '/home/er/lsh'
 POSITIONS_FILE = os.path.join(BASE_DIR, 'saved_positions.json')
 CONFIG_FILE = os.path.join(BASE_DIR, 'position_config.json')
+PROCEDURES_FILE = os.path.join(BASE_DIR, 'saved_procedures.json')
 VIDEOS_DIR = os.path.join(BASE_DIR, 'videos')
 
 # Camera Configuration

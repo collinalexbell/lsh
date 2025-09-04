@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from ..services.wall_service import wall_service
 from ..services.robot_controller import robot_controller
+from ..models.robot_state import robot_state
 
 wall_bp = Blueprint('wall', __name__)
 
@@ -155,10 +156,16 @@ def create_plane_calibration():
         if not robot_controller.is_connected():
             return jsonify({'success': False, 'message': 'Robot not connected'})
         
-        # Get current robot angles
-        current_angles = robot_controller.get_angles()
-        if not current_angles:
-            return jsonify({'success': False, 'message': 'Could not get current robot angles'})
+        # Use ideal angles from unified state instead of reading from robot
+        if not robot_state.state_initialized:
+            # Initialize from robot only if state not set
+            current_angles = robot_controller.get_angles()
+            if current_angles:
+                robot_state.update_ideal_angles(current_angles)
+            else:
+                return jsonify({'success': False, 'message': 'Could not get current robot angles'})
+        
+        current_angles = robot_state.get_ideal_angles()
         
         calibration = wall_service.create_plane_calibration(name, current_angles)
         

@@ -26,6 +26,12 @@
   margin-bottom: 15px;
 }
 
+.position-item {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
 .position-btn {
   background: linear-gradient(45deg, #2196F3, #1976D2);
   color: white;
@@ -37,12 +43,46 @@
   font-weight: bold;
   transition: all 0.3s ease;
   text-align: left;
+  flex: 1;
 }
 
 .position-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
   background: linear-gradient(45deg, #1976D2, #1565C0);
+}
+
+.position-btn.disabled {
+  background: linear-gradient(45deg, #666, #555);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.position-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: linear-gradient(45deg, #666, #555);
+}
+
+.delete-btn {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  min-width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, #d32f2f, #c62828);
 }
 
 .position-angles {

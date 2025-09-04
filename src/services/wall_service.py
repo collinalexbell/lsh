@@ -137,10 +137,20 @@ class WallService:
         if not name.strip():
             raise ValueError("Calibration name cannot be empty")
         
-        # Get the working plane from current orientation
-        coords = robot_controller._mc.get_coords()
-        if not coords or len(coords) != 6:
+        # Get the working plane from current ideal state, not robot coordinates
+        if not robot_state.state_initialized:
+            # Initialize from robot only if state not set
+            current_angles = robot_controller.get_angles()
+            if current_angles:
+                robot_state.update_ideal_angles(current_angles)
+            else:
+                return None
+        
+        # Get ideal coordinates from state
+        ideal_coords = robot_state.get_ideal_cartesian(robot_controller)
+        if not ideal_coords or len(ideal_coords) != 6:
             return None
+        coords = ideal_coords
         
         # Calculate proper plane coordinate system from end effector orientation
         import numpy as np
@@ -187,17 +197,14 @@ class WallService:
             'orientation': orientation
         }
         
-        # Create calibration point at current position
-        # Use MyCobot's built-in get_coords instead of custom kinematics
-        coords = robot_controller._mc.get_coords()
-        if not coords or len(coords) != 6:
-            return None
+        # Create calibration point at current ideal position
+        # Use ideal coordinates from state, not robot queries
         current_pos, current_orient = coords[:3], coords[3:]
         
         calibration_point = {
             'id': 1,
             'name': 'Reference Point',
-            'robotPosition': current_angles,
+            'robotPosition': robot_state.get_ideal_angles(),
             'worldPosition': current_pos,
             'screenPosition': None  # Will be set by user if needed
         }
@@ -245,24 +252,24 @@ class WallService:
             # Simplified approach: always get current robot position for plane movements
             # The key is that we use target_angles for IK, but get position from robot
             if robot_state.state_initialized:
-                current_angles = robot_state.get_target_angles()
+                current_angles = robot_state.get_ideal_angles()
                 print(f"DEBUG: Using target angles from unified state: {current_angles}")
             else:
                 current_angles = robot_controller.get_angles()
                 if current_angles:
-                    robot_state.update_target_angles(current_angles)
+                    robot_state.update_ideal_angles(current_angles)
                     robot_state.set_manual_control(True)
                     robot_state.set_plane_mode(True)
                 print(f"DEBUG: Initialized unified state with robot angles: {current_angles}")
             
-            # Always get current robot position - this is our reference point
-            coords = robot_controller._mc.get_coords()
-            if not coords or len(coords) != 6 or not current_angles:
-                print("DEBUG: Could not get coordinates or angles")
+            # Get current ideal position from state - this is our reference point
+            ideal_coords = robot_state.get_ideal_cartesian(robot_controller)
+            if not ideal_coords or len(ideal_coords) != 6 or not current_angles:
+                print("DEBUG: Could not get ideal coordinates or angles")
                 return None
                 
-            current_pos, current_orient = coords[:3], coords[3:]
-            print(f"DEBUG: Plane movement from position: {current_pos}, using ideal angles: {current_angles}")
+            current_pos, current_orient = ideal_coords[:3], ideal_coords[3:]
+            print(f"DEBUG: Plane movement from ideal position: {current_pos}, using ideal angles: {current_angles}")
             
             # Get plane vectors from calibration
             plane = calibration.get('plane')
@@ -303,7 +310,7 @@ class WallService:
             print(f"DEBUG: IK result (degrees): {target_angles_degrees}")
             
             # Update unified global robot state with new ideal position
-            robot_state.update_target_angles(target_angles_degrees)
+            robot_state.update_ideal_angles(target_angles_degrees)
             print(f"DEBUG: Updated unified robot state - angles: {target_angles_degrees}")
             print(f"DEBUG: Calculated target cartesian: {target_coords}")
             

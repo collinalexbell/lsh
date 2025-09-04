@@ -2,7 +2,12 @@ import { RobotProvider } from './contexts/RobotContext';
 import { RobotController } from './components/RobotController';
 import { PositionManager } from './components/PositionManager';
 import { SavePosition } from './components/SavePosition';
+import { ProcedureManager } from './components/ProcedureManager';
+import { CreateProcedure } from './components/CreateProcedure';
 import { CameraFeed } from './components/CameraFeed';
+import { AprilTagDetector } from './components/AprilTagDetector';
+import { WallCalibration } from './components/WallCalibration';
+// import EndEffectorController from './components/EndEffectorController'; // Removed from app
 import './App.css';
 
 function App() {
@@ -19,10 +24,14 @@ function App() {
             <div className="left-column">
               <PositionManager />
               <SavePosition />
+              <ProcedureManager />
+              <CreateProcedure />
+              <WallCalibration />
               <RobotController />
             </div>
             <div className="right-column">
               <CameraFeed />
+              <AprilTagDetector />
             </div>
           </div>
         </main>

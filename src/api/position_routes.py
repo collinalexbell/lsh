@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from ..services.position_service import position_service
 from ..services.robot_controller import robot_controller
+from ..models.robot_state import robot_state
 
 position_bp = Blueprint('position', __name__)
 
@@ -106,9 +107,24 @@ def move_to_position(position_name):
         if not robot_controller.ensure_powered():
             return jsonify({'success': False, 'message': 'Robot not powered'})
         
+        # Use the unified robot state system:
+        # 1. Read current ideal state (if initialized)
+        # 2. Move to new target position
+        # 3. Update unified global state
+        
+        if robot_state.state_initialized:
+            current_ideal = robot_state.get_ideal_angles()
+            print(f"DEBUG: Position move from ideal state: {current_ideal} to {angles}")
+        else:
+            print(f"DEBUG: Position move initializing state to: {angles}")
+        
         success = robot_controller.send_angles(angles, 80)  # Use moderate speed
         
         if success:
+            # The send_angles call will update the unified target_angles via robot_controller
+            # This automatically maintains the single global state for all movement types
+            print(f"DEBUG: Position move completed - unified state updated to: {angles}")
+            
             return jsonify({
                 'success': True,
                 'message': f'Moving to position "{position_name}"',

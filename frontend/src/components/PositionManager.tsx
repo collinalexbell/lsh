@@ -45,16 +45,46 @@ export function PositionManager() {
     }
   };
 
-  const enabledPositions = Object.entries(savedPositions).filter(
+  const deletePosition = async (name: string) => {
+    if (!confirm(`Are you sure you want to delete position "${name}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/positions/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log(`Deleted position: ${name}`);
+        // Reload positions to refresh the list
+        loadPositions();
+      } else {
+        console.error('Delete failed:', data.message);
+        alert(`Failed to delete position: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      alert('Network error while deleting position');
+    }
+  };
+
+  const allPositions = Object.entries(savedPositions);
+  const enabledPositions = allPositions.filter(
     ([name]) => positionConfig[name]?.enabled
   );
 
-  if (enabledPositions.length === 0) {
+  if (allPositions.length === 0) {
     return (
       <div className="position-manager">
         <h3>Saved Positions</h3>
         <div className="no-positions">
-          No positions available. Use the Positions page to create and enable positions.
+          No positions saved yet. Use the Save Position section to create positions.
         </div>
       </div>
     );
@@ -64,22 +94,37 @@ export function PositionManager() {
     <div className="position-manager">
       <h3>Saved Positions</h3>
       <div className="position-buttons">
-        {enabledPositions.map(([name, data]) => (
-          <button
-            key={name}
-            className="position-btn"
-            onClick={() => moveToPosition(name)}
-            title={`Move to ${name}: [${data.angles.map(a => a.toFixed(1)).join(', ')}]`}
-          >
-            {name}
-            <div className="position-angles">
-              [{data.angles.map(a => a.toFixed(1)).join(', ')}]
+        {allPositions.map(([name, data]) => {
+          const isEnabled = positionConfig[name]?.enabled;
+          return (
+            <div key={name} className="position-item">
+              <button
+                className={`position-btn ${isEnabled ? 'enabled' : 'disabled'}`}
+                onClick={() => moveToPosition(name)}
+                disabled={!isEnabled}
+                title={`Move to ${name}: [${data.angles.map(a => a.toFixed(1)).join(', ')}]`}
+              >
+                {name}
+                <div className="position-angles">
+                  [{data.angles.map(a => a.toFixed(1)).join(', ')}]
+                </div>
+              </button>
+              <button
+                className="delete-btn"
+                onClick={() => deletePosition(name)}
+                title={`Delete position "${name}"`}
+              >
+                🗑️
+              </button>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
       <div className="position-info">
-        Moving to a saved position will enable individual servo reset buttons.
+        {enabledPositions.length > 0 && (
+          <p>Moving to an enabled position will allow individual servo reset.</p>
+        )}
+        <p>Only enabled positions can be used for movement.</p>
       </div>
     </div>
   );

@@ -67,6 +67,11 @@ def power_off():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@robot_bp.route('/api/power_off', methods=['POST'])
+def power_off_legacy():
+    """Power off robot (legacy route for frontend compatibility)"""
+    return power_off()
+
 # Joint control endpoints
 @robot_bp.route('/api/joint/move', methods=['POST'])
 def move_joint():
@@ -98,7 +103,7 @@ def move_joint():
             return jsonify({
                 'success': True,
                 'message': f'Joint {joint_id + 1} moved to {angle:.1f}°',
-                'angles': robot_state.get_target_angles()
+                'angles': robot_state.get_ideal_angles()
             })
         else:
             return jsonify({'success': False, 'message': 'Failed to move joint'})
@@ -126,7 +131,7 @@ def move_all_joints():
             return jsonify({
                 'success': True,
                 'message': 'All joints moved',
-                'angles': robot_state.get_target_angles()
+                'angles': robot_state.get_ideal_angles()
             })
         else:
             return jsonify({'success': False, 'message': 'Failed to move joints'})
@@ -145,7 +150,7 @@ def get_current_joints():
         if angles is None:
             return jsonify({'success': False, 'message': 'Failed to read angles', 'angles': [0, 0, 0, 0, 0, 0]})
         
-        robot_state.update_target_angles(angles)
+        robot_state.update_ideal_angles(angles)
         
         from ..utils.config import ANGLE_LIMITS
         return jsonify({
@@ -267,3 +272,81 @@ def stop_jiggling():
     """Stop jiggling"""
     robot_state.set_jiggling_state(False)
     return jsonify({'success': True, 'message': 'Jiggling stopped'})
+
+# End effector control endpoints
+@robot_bp.route('/api/end_effector/position', methods=['GET'])
+def get_end_effector_position():
+    """Get current end effector position and orientation"""
+    try:
+        position_data = robot_controller.get_end_effector_position()
+        if position_data is None:
+            return jsonify({'success': False, 'message': 'Failed to get end effector position'})
+        
+        return jsonify({
+            'success': True,
+            'position': position_data['position'],
+            'orientation': position_data['orientation'],
+            'joint_angles': position_data['joint_angles']
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@robot_bp.route('/api/end_effector/move', methods=['POST'])
+def move_end_effector():
+    """Move end effector to target cartesian position"""
+    try:
+        data = request.json or {}
+        target_pos = data.get('position')  # [x, y, z] in mm
+        target_orient = data.get('orientation')  # [rx, ry, rz] in degrees
+        
+        if target_pos is None or target_orient is None:
+            return jsonify({'success': False, 'message': 'Position and orientation required'})
+        
+        if len(target_pos) != 3 or len(target_orient) != 3:
+            return jsonify({'success': False, 'message': 'Position and orientation must have 3 values each'})
+        
+        success = robot_controller.move_end_effector_cartesian(target_pos, target_orient)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'End effector moved to position {target_pos}',
+                'position': target_pos,
+                'orientation': target_orient
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to move end effector'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@robot_bp.route('/api/end_effector/translate', methods=['POST'])
+def translate_end_effector():
+    """Translate end effector by specified amounts"""
+    try:
+        data = request.json or {}
+        dx = data.get('dx', 0)
+        dy = data.get('dy', 0)
+        dz = data.get('dz', 0)
+        
+        if dx == 0 and dy == 0 and dz == 0:
+            return jsonify({'success': False, 'message': 'At least one translation amount must be non-zero'})
+        
+        # Validate translation amounts (limit to reasonable values)
+        max_translation = 100  # mm
+        if abs(dx) > max_translation or abs(dy) > max_translation or abs(dz) > max_translation:
+            return jsonify({'success': False, 'message': f'Translation amounts must be <= {max_translation}mm'})
+        
+        success = robot_controller.translate_end_effector(dx, dy, dz)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'End effector translated by dx={dx}, dy={dy}, dz={dz}mm',
+                'translation': {'dx': dx, 'dy': dy, 'dz': dz}
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Translation failed - target may be unreachable'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
