@@ -162,31 +162,66 @@ class WallService:
         
         print(f"DEBUG: Creating plane calibration - Position: {position}, Orientation: {orientation}")
         
-        # Use intrinsic rotation order ZYX (yaw-pitch-roll) which is common for robotic end effectors
-        # This represents the end effector's actual orientation in space
+        # TEST MULTIPLE ROTATION ORDERS - MyCobot documentation is unclear
+        # Let's try different conventions to see which gives sensible results
         
-        # Create rotation matrices (intrinsic rotations)
-        Rz = np.array([[np.cos(rz), -np.sin(rz), 0],
-                      [np.sin(rz), np.cos(rz), 0],
-                      [0, 0, 1]])
+        # Create rotation matrices
+        Rx = np.array([[1, 0, 0],
+                      [0, np.cos(rx), -np.sin(rx)],
+                      [0, np.sin(rx), np.cos(rx)]])
         
         Ry = np.array([[np.cos(ry), 0, np.sin(ry)],
                       [0, 1, 0],
                       [-np.sin(ry), 0, np.cos(ry)]])
         
-        Rx = np.array([[1, 0, 0],
-                      [0, np.cos(rx), -np.sin(rx)],
-                      [0, np.sin(rx), np.cos(rx)]])
+        Rz = np.array([[np.cos(rz), -np.sin(rz), 0],
+                      [np.sin(rz), np.cos(rz), 0],
+                      [0, 0, 1]])
         
-        # Combined rotation matrix (ZYX intrinsic = Rz * Ry * Rx)
-        R = Rz @ Ry @ Rx
+        # Test different rotation orders
+        R_xyz = Rx @ Ry @ Rz  # XYZ intrinsic
+        R_zyx = Rz @ Ry @ Rx  # ZYX intrinsic (common for robotics)
+        R_zxy = Rz @ Rx @ Ry  # ZXY intrinsic
         
-        # Extract the coordinate axes from the rotation matrix
-        # These represent the end effector's actual coordinate system
-        local_x_axis = R[:, 0].tolist()  # End effector's X-axis direction in world space
-        local_y_axis = R[:, 1].tolist()  # End effector's Y-axis direction in world space
-        normal = R[:, 2].tolist()        # End effector's Z-axis direction (normal to working plane)
+        print(f"DEBUG: Testing rotation orders:")
+        print(f"  XYZ: X={R_xyz[:, 0]}, Y={R_xyz[:, 1]}, Z={R_xyz[:, 2]}")
+        print(f"  ZYX: X={R_zyx[:, 0]}, Y={R_zyx[:, 1]}, Z={R_zyx[:, 2]}")
+        print(f"  ZXY: X={R_zxy[:, 0]}, Y={R_zxy[:, 1]}, Z={R_zxy[:, 2]}")
         
+        # For now, use ZYX which is common for end effector orientations
+        R = R_zyx
+        
+        # Extract the normal (Z-axis) from the rotation matrix
+        # This defines the plane orientation based on end effector
+        normal = R[:, 2]  # End effector's Z-axis direction (normal to working plane)
+        
+        # Calculate ground-parallel X-axis by projecting the end effector's X-axis onto the horizontal plane
+        end_effector_x = R[:, 0]  # End effector's X-axis
+        
+        # Project onto horizontal plane by removing Z component
+        horizontal_x = np.array([end_effector_x[0], end_effector_x[1], 0])
+        
+        # If the projection is too small (pointing nearly vertical), use world X-axis as fallback
+        if np.linalg.norm(horizontal_x) < 0.1:
+            horizontal_x = np.array([1, 0, 0])  # World X-axis
+        else:
+            horizontal_x = horizontal_x / np.linalg.norm(horizontal_x)  # Normalize
+        
+        # Calculate Y-axis as cross product of normal and X-axis to ensure orthogonal coordinate system
+        local_y_axis = np.cross(normal, horizontal_x)
+        local_y_axis = local_y_axis / np.linalg.norm(local_y_axis)  # Normalize
+        
+        # Re-calculate X-axis to ensure perfect orthogonality (in case normal wasn't perfectly perpendicular to horizontal)
+        local_x_axis = np.cross(local_y_axis, normal)
+        local_x_axis = local_x_axis / np.linalg.norm(local_x_axis)  # Normalize
+        
+        # Convert to lists for storage
+        local_x_axis = local_x_axis.tolist()
+        local_y_axis = local_y_axis.tolist()
+        normal = normal.tolist()
+        
+        print(f"DEBUG: End effector X-axis: {end_effector_x.tolist()}")
+        print(f"DEBUG: Ground-parallel X-axis: {local_x_axis}")
         print(f"DEBUG: Calculated plane axes - X: {local_x_axis}, Y: {local_y_axis}, Normal: {normal}")
         
         plane_info = {
@@ -279,7 +314,34 @@ class WallService:
             import numpy as np
             local_x = np.array(plane['local_x_axis'])
             local_y = np.array(plane['local_y_axis'])
+            normal = np.array(plane['normal'])
             current_pos_np = np.array(current_pos)
+            
+            # Validate coordinate system orthogonality
+            dot_xy = np.dot(local_x, local_y)
+            dot_xn = np.dot(local_x, normal)
+            dot_yn = np.dot(local_y, normal)
+            
+            if abs(dot_xy) > 0.1 or abs(dot_xn) > 0.1 or abs(dot_yn) > 0.1:
+                print(f"WARNING: Non-orthogonal coordinate system detected!")
+                print(f"  X·Y = {dot_xy:.3f} (should be ~0)")
+                print(f"  X·N = {dot_xn:.3f} (should be ~0)")  
+                print(f"  Y·N = {dot_yn:.3f} (should be ~0)")
+                
+            # Ensure axes are normalized
+            x_mag = np.linalg.norm(local_x)
+            y_mag = np.linalg.norm(local_y)
+            n_mag = np.linalg.norm(normal)
+            
+            if abs(x_mag - 1.0) > 0.1 or abs(y_mag - 1.0) > 0.1 or abs(n_mag - 1.0) > 0.1:
+                print(f"WARNING: Non-normalized axes detected!")
+                print(f"  |X| = {x_mag:.3f} (should be ~1)")
+                print(f"  |Y| = {y_mag:.3f} (should be ~1)")
+                print(f"  |N| = {n_mag:.3f} (should be ~1)")
+                
+                # Normalize the axes
+                local_x = local_x / x_mag if x_mag > 1e-6 else local_x
+                local_y = local_y / y_mag if y_mag > 1e-6 else local_y
             
             # Calculate movement in world coordinates using the plane's local coordinate system
             world_movement = dx_local * local_x + dy_local * local_y
