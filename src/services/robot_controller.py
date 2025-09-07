@@ -5,7 +5,7 @@ from typing import List, Optional
 from pymycobot import MyCobot320
 
 from ..models.robot_state import robot_state
-from ..utils.config import ROBOT_PORT, ROBOT_BAUDRATE, HOME_POSITION, EXTEND_POSITION
+from ..utils.config import ROBOT_PORT, ROBOT_BAUDRATE, HOME_POSITION, EXTEND_POSITION, ANGLE_LIMITS
 from ..utils.validation import clamp_angles, validate_angles_array
 # Removed kinematics import - using MyCobot library directly
 
@@ -45,6 +45,62 @@ class RobotController:
             print(f"Failed to power on robot: {e}")
             return False
     
+    def _solve_ik_safe(self, target_coords: List[float]) -> Optional[List[float]]:
+        """Safe IK solver with validation and garbage detection"""
+        if not self.is_connected():
+            return None
+        
+        try:
+            # Always use zero initialization to avoid 16-bit overflow
+            zero_angles = [0, 0, 0, 0, 0, 0]  # All zeros in centidegrees
+            
+            # Call firmware IK solver
+            result_raw = self._mc.solve_inv_kinematics(target_coords, zero_angles)
+            
+            if result_raw is None or len(result_raw) != 6:
+                return None
+            
+            # Convert from centidegrees to degrees
+            result_degrees = [angle / 100.0 for angle in result_raw]
+            
+            # Validate result - check for garbage patterns
+            if self._is_garbage_ik_result(result_degrees):
+                print(f"WARNING: IK returned garbage result: {result_degrees}")
+                return None
+            
+            # Check if within joint limits
+            for i, (angle, (min_limit, max_limit)) in enumerate(zip(result_degrees, ANGLE_LIMITS)):
+                if angle < min_limit or angle > max_limit:
+                    print(f"WARNING: IK result joint {i+1} ({angle:.1f}°) exceeds limits [{min_limit}, {max_limit}]")
+                    return None
+            
+            return result_degrees
+            
+        except Exception as e:
+            print(f"IK solver error: {e}")
+            return None
+    
+    def _is_garbage_ik_result(self, angles: List[float]) -> bool:
+        """Check if IK result looks like garbage data"""
+        if not angles or len(angles) != 6:
+            return True
+        
+        # Check for the infamous [80,80,80,80,80,80] pattern and similar
+        if len(set(angles)) == 1:  # All angles are the same
+            return True
+        
+        # Check for obviously invalid angles (> 180°)
+        for angle in angles:
+            if abs(angle) > 180:
+                return True
+        
+        # Check for suspiciously round numbers (likely garbage)
+        round_count = sum(1 for angle in angles if abs(angle - round(angle)) < 0.01)
+        if round_count >= 4:  # Too many perfectly round angles
+            return True
+        
+        return False
+
     def power_off(self) -> bool:
         """Turn off robot power"""
         if not self.is_connected():
@@ -225,14 +281,11 @@ class RobotController:
             # Combine position and orientation into target coordinates [x, y, z, rx, ry, rz]
             target_coords = target_pos + target_orient
             
-            # Use MyCobot's built-in inverse kinematics
-            target_angles_raw = self._mc.solve_inv_kinematics(target_coords, current_angles)
-            if target_angles_raw is None or len(target_angles_raw) != 6:
-                print("No IK solution found")
+            # Use safe IK solver with validation
+            target_angles = self._solve_ik_safe(target_coords)
+            if target_angles is None:
+                print("No valid IK solution found")
                 return False
-            
-            # Convert from centidegrees to degrees
-            target_angles = [angle / 100.0 for angle in target_angles_raw]
             
             # Send angles to robot
             return self.send_angles(target_angles, 50)
@@ -262,14 +315,11 @@ class RobotController:
             target_pos = [current_coords[0] + dx, current_coords[1] + dy, current_coords[2] + dz]
             target_coords = target_pos + current_coords[3:6]  # Keep same orientation
             
-            # Use MyCobot's built-in inverse kinematics  
-            target_angles_raw = self._mc.solve_inv_kinematics(target_coords, current_angles)
-            if target_angles_raw is None or len(target_angles_raw) != 6:
-                print("Translation not possible - no IK solution")
+            # Use safe IK solver with validation
+            target_angles = self._solve_ik_safe(target_coords)
+            if target_angles is None:
+                print("Translation not possible - no valid IK solution")
                 return False
-                
-            # Convert from centidegrees to degrees
-            target_angles = [angle / 100.0 for angle in target_angles_raw]
             
             # Update state for manual control
             robot_state.set_manual_control(True)

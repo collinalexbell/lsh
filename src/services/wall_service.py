@@ -360,15 +360,11 @@ class WallService:
             print(f"DEBUG: Target coordinates: {target_coords}")
             print(f"DEBUG: Current angles: {current_angles}")
             
-            target_angles = robot_controller._mc.solve_inv_kinematics(target_coords, current_angles)
+            target_angles_degrees = robot_controller._solve_ik_safe(target_coords)
             
-            if target_angles is None or len(target_angles) != 6:
-                print("MyCobot IK failed for plane movement")
+            if target_angles_degrees is None:
+                print("Safe IK failed for plane movement")
                 return None
-            
-            # Convert from centidegrees to degrees
-            target_angles_degrees = [angle / 100.0 for angle in target_angles]
-            print(f"DEBUG: IK result (raw centidegrees): {target_angles}")
             print(f"DEBUG: IK result (degrees): {target_angles_degrees}")
             
             # Update unified global robot state with new ideal position
@@ -434,11 +430,7 @@ class WallService:
         default_orientation = [0, 0, 0]  # degrees
         # Disabled: Custom IK removed - using MyCobot built-in
         target_coords = world_position + robot_orientation
-        robot_angles_raw = robot_controller._mc.solve_inv_kinematics(target_coords, [0,0,0,0,0,0])
-        if robot_angles_raw and len(robot_angles_raw) == 6:
-            robot_angles = [angle / 100.0 for angle in robot_angles_raw]  # Convert centidegrees
-        else:
-            robot_angles = None
+        robot_angles = robot_controller._solve_ik_safe(target_coords)
         # robot_angles = mycobot_kinematics.inverse_kinematics(world_position, default_orientation)
         
         if robot_angles is None:
